@@ -42,6 +42,16 @@ const version = packageJson.version;
           </div>
         </div>
 
+        <!-- User Input Values (for debugging) -->
+        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+          <h3 class="text-lg font-bold text-yellow-800 mb-3 flex items-center gap-2">
+            <span>🔍</span> Your Input (for error checking)
+          </h3>
+          <div id="user-inputs" class="space-y-1 text-sm text-yellow-700">
+            <!-- Will be populated by JavaScript -->
+          </div>
+        </div>
+
         <!-- Pre-Flight Schedule -->
         <div class="bg-white rounded-lg shadow-md p-6 mb-6">
           <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
@@ -88,6 +98,18 @@ const version = packageJson.version;
             <div><strong>Flight duration:</strong> ~${plan.flightDuration || 'calculating...'} hours</div>
             <div><strong>Estimated adjustment:</strong> ${plan.estimatedAdjustmentDays} days</div>
           `;
+          
+          // Show user inputs for debugging
+          const userInputsDiv = document.getElementById('user-inputs');
+          if (userInputsDiv && plan.travelDetails) {
+            userInputsDiv.innerHTML = `
+              <div><strong>Your usual bedtime:</strong> ${plan.travelDetails.usualBedtime} (${bedHour}:${bedMin.toString().padStart(2, '0')})</div>
+              <div><strong>Your usual wake time:</strong> ${plan.travelDetails.usualWakeTime} (${wakeHour}:${wakeMin.toString().padStart(2, '0')})</div>
+              <div><strong>Calculation method:</strong> ${plan.direction === 'eastward' ? 'Advance schedule (earlier times)' : 'Delay schedule (later times)'}</div>
+              <div><strong>Max daily shift:</strong> 45 minutes</div>
+              <div><strong>Total days for adjustment:</strong> ${Math.max(3, Math.min(plan.timeZonesDifference, 7))}</div>
+            `;
+          }
         }
         
         // Generate simple pre-flight schedule
@@ -129,11 +151,14 @@ const version = packageJson.version;
               const targetWakeTime = Math.max(wakeHour - todaysShift, Math.max(wakeHour - 3, 5)); // Don't go more than 3 hours or before 5 AM
               const lightDimTime = Math.max(targetBedtime - 2, 18); // Dim time, not before 6 PM
               
+              const actualBedtimeShift = bedHour - targetBedtime; // How much earlier we're actually going
+              const actualWakeShift = wakeHour - targetWakeTime; // How much earlier we're actually waking
+              
               scheduleHTML += `
                 <div class="bg-blue-50 p-3 rounded-lg mb-3">
                   <div class="font-bold text-blue-800 mb-2">😴 SLEEP SCHEDULE</div>
-                  <div><strong>Wake up: ${Math.floor(targetWakeTime)}:${((targetWakeTime % 1) * 60).toFixed(0).padStart(2, '0')}</strong> (${(todaysShift * 60).toFixed(0)} min earlier than usual)</div>
-                  <div><strong>Go to bed: ${Math.floor(targetBedtime)}:${((targetBedtime % 1) * 60).toFixed(0).padStart(2, '0')}</strong> (${(todaysShift * 60).toFixed(0)} min earlier than usual)</div>
+                  <div><strong>Wake up: ${Math.floor(targetWakeTime)}:${((targetWakeTime % 1) * 60).toFixed(0).padStart(2, '0')}</strong> (${(actualWakeShift * 60).toFixed(0)} min earlier than usual)</div>
+                  <div><strong>Go to bed: ${Math.floor(targetBedtime)}:${((targetBedtime % 1) * 60).toFixed(0).padStart(2, '0')}</strong> (${(actualBedtimeShift * 60).toFixed(0)} min earlier than usual)</div>
                 </div>
                 
                 <div class="space-y-2 text-sm">
@@ -152,11 +177,17 @@ const version = packageJson.version;
               const targetBedtime = Math.min(bedHour + maxBedtimeShift, bedHour + 2); // Cap at 2 hours later max
               const targetWakeTime = Math.min(wakeHour + maxBedtimeShift, wakeHour + 2); // Cap at 2 hours later max
               
+              const actualBedtimeShift = targetBedtime - bedHour; // How much later we're actually going (could be negative if earlier)
+              const actualWakeShift = targetWakeTime - wakeHour; // How much later we're actually waking
+              
+              const bedtimeLabel = actualBedtimeShift >= 0 ? `${(actualBedtimeShift * 60).toFixed(0)} min later than usual` : `${Math.abs(actualBedtimeShift * 60).toFixed(0)} min earlier than usual`;
+              const wakeLabel = actualWakeShift >= 0 ? `${(actualWakeShift * 60).toFixed(0)} min later than usual` : `${Math.abs(actualWakeShift * 60).toFixed(0)} min earlier than usual`;
+              
               scheduleHTML += `
                 <div class="bg-orange-50 p-3 rounded-lg mb-3">
                   <div class="font-bold text-orange-800 mb-2">😴 SLEEP SCHEDULE</div>
-                  <div><strong>Wake up: ${Math.floor(targetWakeTime)}:${((targetWakeTime % 1) * 60).toFixed(0).padStart(2, '0')}</strong> (${(todaysShift * 60).toFixed(0)} min later than usual)</div>
-                  <div><strong>Go to bed: ${Math.floor(targetBedtime)}:${((targetBedtime % 1) * 60).toFixed(0).padStart(2, '0')}</strong> (${(todaysShift * 60).toFixed(0)} min later than usual)</div>
+                  <div><strong>Wake up: ${Math.floor(targetWakeTime)}:${((targetWakeTime % 1) * 60).toFixed(0).padStart(2, '0')}</strong> (${wakeLabel})</div>
+                  <div><strong>Go to bed: ${Math.floor(targetBedtime)}:${((targetBedtime % 1) * 60).toFixed(0).padStart(2, '0')}</strong> (${bedtimeLabel})</div>
                 </div>
                 
                 <div class="space-y-2 text-sm">

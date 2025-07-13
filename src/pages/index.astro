@@ -454,13 +454,19 @@ const version = packageJson.version;
 						const targetBedtime = Math.min(bedHour + maxBedtimeShift, bedHour + 2);
 						const targetWakeTime = Math.min(wakeHour + maxBedtimeShift, wakeHour + 2);
 						
+						const actualBedtimeShift = targetBedtime - bedHour; // Actual difference (could be negative)
+						const actualWakeShift = targetWakeTime - wakeHour;
+						
+						const bedtimeText = actualBedtimeShift >= 0 ? `${(actualBedtimeShift * 60).toFixed(0)} min later` : `${Math.abs(actualBedtimeShift * 60).toFixed(0)} min earlier`;
+						const wakeText = actualWakeShift >= 0 ? `${(actualWakeShift * 60).toFixed(0)} min later` : `${Math.abs(actualWakeShift * 60).toFixed(0)} min earlier`;
+						
 						schedule = `
 							<div class="font-medium text-sky-800">🌙 Delaying your schedule (Day ${adjustmentDay}) - Gradual approach</div>
 							<div><strong>06:00-10:00:</strong> 🕶️ Keep lights dim, wear sunglasses</div>
-							<div><strong>${Math.floor(targetWakeTime)}:${((targetWakeTime % 1) * 60).toFixed(0).padStart(2, '0')}:</strong> 😴 WAKE UP (${(maxBedtimeShift * 60).toFixed(0)} min later - realistic!)</div>
+							<div><strong>${Math.floor(targetWakeTime)}:${((targetWakeTime % 1) * 60).toFixed(0).padStart(2, '0')}:</strong> 😴 WAKE UP (${wakeText} - realistic!)</div>
 							<div><strong>16:00-${Math.floor(targetBedtime - 1)}:00:</strong> 🌅 Bright light exposure to gradually delay clock</div>
 							<div><strong>${Math.floor(targetBedtime - 1)}:${((((targetBedtime - 1) % 1) * 60).toFixed(0).padStart(2, '0'))}:</strong> 🌙 Start dimming lights</div>
-							<div><strong>${Math.floor(targetBedtime)}:${((targetBedtime % 1) * 60).toFixed(0).padStart(2, '0')}:</strong> 😴 GO TO BED (${(maxBedtimeShift * 60).toFixed(0)} min later - doable!)</div>
+							<div><strong>${Math.floor(targetBedtime)}:${((targetBedtime % 1) * 60).toFixed(0).padStart(2, '0')}:</strong> 😴 GO TO BED (${bedtimeText} - realistic!)</div>
 							<div><strong>Naps:</strong> ✅ <30 min, before 3 PM, 8+ hrs before bed</div>
 						`;
 					}

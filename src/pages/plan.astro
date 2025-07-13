@@ -390,6 +390,12 @@ const samplePlan = {
             const targetBedtime = Math.min(bedHour + maxBedtimeShift, bedHour + 2);
             const targetWakeTime = Math.min(wakeHour + maxBedtimeShift, wakeHour + 2);
             
+            const actualBedtimeShift = targetBedtime - bedHour; // Actual difference (could be negative)
+            const actualWakeShift = targetWakeTime - wakeHour;
+            
+            const bedtimeText = actualBedtimeShift >= 0 ? `${(actualBedtimeShift * 60).toFixed(0)} minutes later than usual` : `${Math.abs(actualBedtimeShift * 60).toFixed(0)} minutes earlier than usual`;
+            const wakeText = actualWakeShift >= 0 ? `${(actualWakeShift * 60).toFixed(0)} minutes later than usual` : `${Math.abs(actualWakeShift * 60).toFixed(0)} minutes earlier than usual`;
+            
             scheduleHTML += `
               <div class="bg-orange-50 p-4 rounded-lg mb-4">
                 <div class="font-bold text-orange-800 mb-2">😴 SLEEP SCHEDULE</div>
@@ -397,7 +403,7 @@ const samplePlan = {
                   <div><strong>Wake up:</strong> ${Math.floor(targetWakeTime)}:${((targetWakeTime % 1) * 60).toFixed(0).padStart(2, '0')}</div>
                   <div><strong>Go to bed:</strong> ${Math.floor(targetBedtime)}:${((targetBedtime % 1) * 60).toFixed(0).padStart(2, '0')}</div>
                 </div>
-                <div class="text-xs text-orange-600 mt-1">(${(maxBedtimeShift * 60).toFixed(0)} minutes later than usual - realistic!)</div>
+                <div class="text-xs text-orange-600 mt-1">(Bedtime: ${bedtimeText}, Wake: ${wakeText})</div>
               </div>
               
               <div class="space-y-3 text-sm">
@@ -407,7 +413,7 @@ const samplePlan = {
                 </div>
                 <div class="flex items-start gap-3">
                   <span class="text-lg">😴</span>
-                  <div><strong>${Math.floor(targetWakeTime)}:${((targetWakeTime % 1) * 60).toFixed(0).padStart(2, '0')}</strong> - WAKE UP (sleep in ${(maxBedtimeShift * 60).toFixed(0)} min longer), keep lighting minimal</div>
+                  <div><strong>${Math.floor(targetWakeTime)}:${((targetWakeTime % 1) * 60).toFixed(0).padStart(2, '0')}</strong> - WAKE UP (${wakeText}), keep lighting minimal</div>
                 </div>
                 <div class="flex items-start gap-3">
                   <span class="text-lg">☀️</span>
@@ -427,7 +433,7 @@ const samplePlan = {
                 </div>
                 <div class="flex items-start gap-3">
                   <span class="text-lg">😴</span>
-                  <div><strong>${Math.floor(targetBedtime)}:${((targetBedtime % 1) * 60).toFixed(0).padStart(2, '0')}</strong> - GO TO BED (${(maxBedtimeShift * 60).toFixed(0)} min later - doable!)</div>
+                  <div><strong>${Math.floor(targetBedtime)}:${((targetBedtime % 1) * 60).toFixed(0).padStart(2, '0')}</strong> - GO TO BED (${bedtimeText} - realistic!)</div>
                 </div>
                 <div class="flex items-start gap-3">
                   <span class="text-lg">☕</span>
