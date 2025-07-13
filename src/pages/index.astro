@@ -28,7 +28,7 @@ const version = packageJson.version;
 					Created in Stradbroke Island - The San Francisco of Australia but without the nasty coldness.
 				</p>
 				<p class="text-xs text-gray-400 max-w-2xl mx-auto">
-					Based on Harvard Medical School circadian rhythm research and PLOS Computational Biology algorithms
+					Based on Harvard Medical School circadian rhythm research • Light exposure algorithms from PLOS studies
 				</p>
 			</header>
 
@@ -148,6 +148,14 @@ const version = packageJson.version;
 							>
 								📋 View Quick Summary (Mobile Friendly)
 							</button>
+							
+							<button 
+								type="button"
+								id="import-plan-btn"
+								class="w-full bg-blue-50 hover:bg-blue-100 text-blue-700 font-medium py-3 px-6 rounded-lg transition-colors text-sm border border-blue-200"
+							>
+								📂 Import Saved Plan
+							</button>
 						</div>
 					</form>
 				</div>
@@ -179,6 +187,9 @@ const version = packageJson.version;
 				</div>
 			</main>
 		</div>
+
+		<!-- Hidden file input for import -->
+		<input type="file" id="import-file" accept=".json" style="display: none;">
 
 		<script>
 			document.getElementById('jetlag-form')?.addEventListener('submit', function(e) {
@@ -253,6 +264,42 @@ const version = packageJson.version;
 				if (existingPlan && summaryBtn) {
 					summaryBtn.style.display = 'block';
 					summaryBtn.onclick = () => window.location.href = '/summary';
+				}
+			});
+
+			// Import plan functionality
+			document.getElementById('import-plan-btn')?.addEventListener('click', function() {
+				document.getElementById('import-file')?.click();
+			});
+
+			document.getElementById('import-file')?.addEventListener('change', function(e) {
+				const file = e.target.files[0];
+				if (file) {
+					const reader = new FileReader();
+					reader.onload = function(e) {
+						try {
+							const importData = JSON.parse(e.target.result);
+							
+							if (importData.flightShifterPlan) {
+								localStorage.setItem('jetlagPlan', JSON.stringify(importData.flightShifterPlan));
+								
+								// Show success and navigate to plan
+								const btn = document.getElementById('import-plan-btn');
+								const originalText = btn?.textContent;
+								if (btn) {
+									btn.textContent = '✅ Plan Imported!';
+									setTimeout(() => {
+										window.location.href = '/plan';
+									}, 1000);
+								}
+							} else {
+								alert('Invalid Flight Shifter plan file.');
+							}
+						} catch (error) {
+							alert('Error reading file. Please ensure it\'s a valid Flight Shifter plan.');
+						}
+					};
+					reader.readAsText(file);
 				}
 			});
 		</script>

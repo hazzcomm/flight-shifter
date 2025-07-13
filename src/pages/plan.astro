@@ -76,9 +76,11 @@ const samplePlan = {
           <h1 class="text-3xl font-bold text-sky-600">Flight Shifter</h1>
           <span class="text-sm text-gray-500 bg-gray-200 px-2 py-1 rounded">v{version}</span>
         </div>
-        <div class="flex gap-4 justify-center mb-3">
+        <div class="flex gap-4 justify-center mb-3 flex-wrap">
           <a href="/" class="text-sky-600 hover:text-sky-800 underline">← Back to planner</a>
           <a href="/summary" class="text-sky-600 hover:text-sky-800 underline">📋 Quick summary</a>
+          <button id="export-plan" class="text-sky-600 hover:text-sky-800 underline bg-none border-none cursor-pointer">💾 Export plan</button>
+          <button id="import-plan" class="text-sky-600 hover:text-sky-800 underline bg-none border-none cursor-pointer">📂 Import plan</button>
         </div>
         <p class="text-xs text-gray-400 max-w-2xl mx-auto">
           Created in Stradbroke Island • Based on Harvard Medical School & PLOS research
@@ -256,5 +258,84 @@ const samplePlan = {
         </div>
       </main>
     </div>
+
+    <!-- Hidden file input for import -->
+    <input type="file" id="import-file" accept=".json" style="display: none;">
+
+    <script>
+      // Export plan functionality
+      document.getElementById('export-plan')?.addEventListener('click', function() {
+        const planData = localStorage.getItem('jetlagPlan');
+        if (planData) {
+          const plan = JSON.parse(planData);
+          const exportData = {
+            flightShifterPlan: plan,
+            exportDate: new Date().toISOString(),
+            version: '0.4.0'
+          };
+          
+          const blob = new Blob([JSON.stringify(exportData, null, 2)], {
+            type: 'application/json'
+          });
+          
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `flight-shifter-plan-${new Date().toISOString().split('T')[0]}.json`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+          
+          // Show success message
+          const btn = document.getElementById('export-plan');
+          const originalText = btn?.textContent;
+          if (btn) {
+            btn.textContent = '✅ Downloaded!';
+            setTimeout(() => {
+              btn.textContent = originalText;
+            }, 2000);
+          }
+        } else {
+          alert('No plan found to export. Please create a plan first.');
+        }
+      });
+
+      // Import plan functionality
+      document.getElementById('import-plan')?.addEventListener('click', function() {
+        document.getElementById('import-file')?.click();
+      });
+
+      document.getElementById('import-file')?.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = function(e) {
+            try {
+              const importData = JSON.parse(e.target.result);
+              
+              if (importData.flightShifterPlan) {
+                localStorage.setItem('jetlagPlan', JSON.stringify(importData.flightShifterPlan));
+                
+                // Show success and reload
+                const btn = document.getElementById('import-plan');
+                const originalText = btn?.textContent;
+                if (btn) {
+                  btn.textContent = '✅ Imported!';
+                  setTimeout(() => {
+                    window.location.reload();
+                  }, 1000);
+                }
+              } else {
+                alert('Invalid Flight Shifter plan file.');
+              }
+            } catch (error) {
+              alert('Error reading file. Please ensure it\'s a valid Flight Shifter plan.');
+            }
+          };
+          reader.readAsText(file);
+        }
+      });
+    </script>
   </body>
 </html>
