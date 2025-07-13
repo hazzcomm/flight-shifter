@@ -250,32 +250,56 @@ const version = packageJson.version;
 				const depOffset = timezones[travelDetails.departureTimezone] || 0;
 				const arrOffset = timezones[travelDetails.arrivalTimezone] || 0;
 				const timeDiff = arrOffset - depOffset;
-				const direction = timeDiff > 0 ? 'eastward' : 'westward';
-				const timeZonesDifference = Math.abs(timeDiff);
+				let direction, timeZonesDifference, effectiveShift;
 				
-				// Calculate flight duration and arrival time context
+				// Implement crossover logic for large westward shifts
+				if (timeDiff < 0 && Math.abs(timeDiff) > 12) {
+					// Large westward shift - treat as eastward advance
+					direction = 'eastward';
+					timeZonesDifference = Math.abs(timeDiff);
+					effectiveShift = 24 - Math.abs(timeDiff); // e.g., 18h west = 6h east
+				} else {
+					direction = timeDiff > 0 ? 'eastward' : 'westward';
+					timeZonesDifference = Math.abs(timeDiff);
+					effectiveShift = timeZonesDifference;
+				}
+				
+				// Calculate flight duration accounting for timezone differences
 				const depDate = new Date(travelDetails.departureTime);
 				const arrDate = new Date(travelDetails.arrivalTime);
-				const flightDuration = Math.abs(arrDate.getTime() - depDate.getTime()) / (1000 * 60 * 60);
+				
+				// Convert both times to UTC for accurate duration calculation
+				const depUTC = depDate.getTime() - (depOffset * 60 * 60 * 1000);
+				const arrUTC = arrDate.getTime() - (arrOffset * 60 * 60 * 1000);
+				const flightDuration = Math.abs(arrUTC - depUTC) / (1000 * 60 * 60);
 				
 				// Adjust arrival time to destination timezone for better recommendations
 				const arrivalHour = arrDate.getHours();
 				const isLongFlight = flightDuration > 12;
 				const isMajorTimeChange = timeZonesDifference > 8;
 				
-				let estimatedAdjustmentDays = Math.ceil(timeZonesDifference * 0.8);
-				if (isLongFlight) estimatedAdjustmentDays += 1;
-				if (isMajorTimeChange) estimatedAdjustmentDays += 1;
+				// Much more realistic adjustment timeline using aggressive shifts
+				let estimatedAdjustmentDays;
+				if (effectiveShift <= 6) {
+					estimatedAdjustmentDays = Math.ceil(effectiveShift / 1.5); // 1.5h per day
+				} else if (effectiveShift <= 12) {
+					estimatedAdjustmentDays = Math.ceil(effectiveShift / 2); // 2h per day
+				} else {
+					estimatedAdjustmentDays = Math.ceil(effectiveShift / 2.5); // 2.5h per day
+				}
+				estimatedAdjustmentDays = Math.max(3, estimatedAdjustmentDays); // Minimum 3 days
 				
 				const plan = {
 					travelDetails,
 					timeZonesDifference,
 					direction,
+					effectiveShift, // The actual shift we're targeting
 					estimatedAdjustmentDays,
 					flightDuration: Math.round(flightDuration * 10) / 10,
 					arrivalLocalTime: `${arrivalHour}:${arrDate.getMinutes().toString().padStart(2, '0')}`,
 					isLongFlight,
-					isMajorTimeChange
+					isMajorTimeChange,
+					isCrossover: timeDiff < 0 && Math.abs(timeDiff) > 12 // Flag for display
 				};
 				
 				// Store the plan in localStorage to pass to results page
@@ -416,20 +440,16 @@ const version = packageJson.version;
 						<div>• Stay hydrated and avoid alcohol</div>
 					`;
 				} else {
-					// Calculate today's specific adjustments - more aggressive for large differences
+					// Calculate today's specific adjustments - much more aggressive
 					const adjustmentDay = Math.min(3, 4 - daysUntilFlight);
-					let maxDailyShift, totalDays;
-					if (plan.timeZonesDifference <= 6) {
-						maxDailyShift = 0.75; // 45 minutes for small differences
-						totalDays = Math.max(3, plan.timeZonesDifference);
-					} else if (plan.timeZonesDifference <= 12) {
-						maxDailyShift = 1.5; // 90 minutes for medium differences
-						totalDays = Math.max(3, Math.ceil(plan.timeZonesDifference / 1.5));
+					let dailyShift;
+					if (plan.effectiveShift <= 6) {
+						dailyShift = 1.5; // 1.5 hours per day for small-medium shifts
+					} else if (plan.effectiveShift <= 12) {
+						dailyShift = 2.0; // 2 hours per day for medium shifts
 					} else {
-						maxDailyShift = 2.5; // 2.5 hours for huge differences (like SYD-LA)
-						totalDays = Math.max(3, Math.ceil(plan.timeZonesDifference / 2.5));
+						dailyShift = 2.5; // 2.5 hours per day for large shifts
 					}
-					const dailyShift = Math.min(maxDailyShift, plan.timeZonesDifference / totalDays);
 					const todaysShift = dailyShift * adjustmentDay;
 					
 					if (plan.direction === 'eastward') {
@@ -439,8 +459,11 @@ const version = packageJson.version;
 						const [bedHour, bedMin] = originalBedtime.split(':').map(Number);
 						const [wakeHour, wakeMin] = originalWakeTime.split(':').map(Number);
 						
-						const targetBedtime = Math.max(bedHour - todaysShift, 20);
-						const targetWakeTime = Math.max(wakeHour - todaysShift, 5);
+						const effectiveShift = plan.effectiveShift || plan.timeZonesDifference;
+						const cappedShift = Math.min(todaysShift, effectiveShift);
+						
+						const targetBedtime = Math.max(bedHour - cappedShift, 20);
+						const targetWakeTime = Math.max(wakeHour - cappedShift, 5);
 						const lightDimTime = targetBedtime - 2;
 						
 						schedule = `
@@ -458,10 +481,12 @@ const version = packageJson.version;
 						const [bedHour, bedMin] = originalBedtime.split(':').map(Number);
 						const [wakeHour, wakeMin] = originalWakeTime.split(':').map(Number);
 						
-						// Much more conservative westward adjustment
-						const maxBedtimeShift = Math.min(2, todaysShift); // Never more than 2 hours later
-						const targetBedtime = Math.min(bedHour + maxBedtimeShift, bedHour + 2);
-						const targetWakeTime = Math.min(wakeHour + maxBedtimeShift, wakeHour + 2);
+						const effectiveShift = plan.effectiveShift || plan.timeZonesDifference;
+						const cappedShift = Math.min(todaysShift, effectiveShift);
+						
+						// Westward adjustment (delaying schedule)
+						const targetBedtime = Math.min(bedHour + cappedShift, bedHour + 4); // Cap at 4 hours later
+						const targetWakeTime = Math.min(wakeHour + cappedShift, wakeHour + 4);
 						
 						const actualBedtimeShift = targetBedtime - bedHour; // Actual difference (could be negative)
 						const actualWakeShift = targetWakeTime - wakeHour;

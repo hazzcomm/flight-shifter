@@ -121,7 +121,9 @@ const version = packageJson.version;
               <div><strong>Target bedtime in ${plan.travelDetails.arrivalTimezone}:</strong> ${destBedtimeStr} (${plan.travelDetails.arrivalTimezone} time)</div>
               <div><strong>Target wake time in ${plan.travelDetails.arrivalTimezone}:</strong> ${destWakeTimeStr} (${plan.travelDetails.arrivalTimezone} time)</div>
               <div><strong>Timezone difference:</strong> ${plan.timeZonesDifference} hours (${plan.direction})</div>
-              <div><strong>Calculation method:</strong> ${plan.direction === 'eastward' ? 'Advance schedule (earlier times)' : 'Delay schedule (later times)'}</div>
+              <div><strong>Effective shift needed:</strong> ${plan.effectiveShift || plan.timeZonesDifference} hours</div>
+              <div><strong>Strategy:</strong> ${plan.direction === 'eastward' ? 'Advance schedule (go to bed/wake earlier)' : 'Delay schedule (go to bed/wake later)'}</div>
+              ${plan.isCrossover ? '<div><strong>Note:</strong> Large westward shift treated as eastward advance (more effective)</div>' : ''}
             `;
           }
         }
@@ -153,20 +155,17 @@ const version = packageJson.version;
             const [bedHour, bedMin] = originalBedtime.split(':').map(Number);
             const [wakeHour, wakeMin] = originalWakeTime.split(':').map(Number);
             
-            // More aggressive adjustment for large timezone differences
-            let maxDailyShift, totalDays;
-            if (plan.timeZonesDifference <= 6) {
-              maxDailyShift = 0.75; // 45 minutes for small differences
-              totalDays = Math.max(3, plan.timeZonesDifference);
-            } else if (plan.timeZonesDifference <= 12) {
-              maxDailyShift = 1.5; // 90 minutes for medium differences
-              totalDays = Math.max(3, Math.ceil(plan.timeZonesDifference / 1.5));
+            // Aggressive adjustment using effective shift
+            const effectiveShift = plan.effectiveShift || plan.timeZonesDifference;
+            let dailyShift;
+            if (effectiveShift <= 6) {
+              dailyShift = 1.5; // 1.5 hours per day
+            } else if (effectiveShift <= 12) {
+              dailyShift = 2.0; // 2 hours per day
             } else {
-              maxDailyShift = 2.5; // 2.5 hours for huge differences (like SYD-LA)
-              totalDays = Math.max(3, Math.ceil(plan.timeZonesDifference / 2.5));
+              dailyShift = 2.5; // 2.5 hours per day
             }
-            const dailyShift = Math.min(maxDailyShift, plan.timeZonesDifference / totalDays);
-            const todaysShift = dailyShift * (day + 1); // Start from day 1, not day 0
+            const todaysShift = Math.min(dailyShift * (day + 1), effectiveShift); // Cap at total needed
             
             if (plan.direction === 'eastward') {
               // Advance sleep schedule gradually (go to bed/wake earlier)
