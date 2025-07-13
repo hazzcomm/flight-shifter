@@ -1,16 +1,202 @@
 ---
-
+import packageJson from '../../package.json';
+const version = packageJson.version;
 ---
 
 <html lang="en">
 	<head>
 		<meta charset="utf-8" />
 		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<meta name="viewport" content="width=device-width" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 		<meta name="generator" content={Astro.generator} />
-		<title>Astro</title>
+		<meta name="description" content="Beat jet lag with science-based travel scheduling. Free alternative to expensive jet lag apps." />
+		<meta name="theme-color" content="#0ea5e9" />
+		<title>Flight Shifter - Beat Jet Lag with Science</title>
 	</head>
-	<body>
-		<h1>Astro</h1>
+	<body class="bg-gray-50 min-h-screen">
+		<div class="container mx-auto px-4 py-8">
+			<header class="text-center mb-12">
+				<div class="flex items-center justify-center gap-2 mb-4">
+					<span class="text-4xl">✈️</span>
+					<h1 class="text-4xl font-bold text-sky-600">Flight Shifter</h1>
+					<span class="text-sm text-gray-500 bg-gray-200 px-2 py-1 rounded">v{version}</span>
+				</div>
+				<p class="text-xl text-gray-600 max-w-2xl mx-auto">
+					Beat jet lag with science-based travel scheduling. Free, fast, and works offline.
+				</p>
+			</header>
+
+			<main class="max-w-4xl mx-auto">
+				<div class="bg-white rounded-xl shadow-lg p-8 mb-8">
+					<h2 class="text-2xl font-semibold mb-6 text-center">Plan Your Trip</h2>
+					
+					<form id="jetlag-form" class="space-y-6">
+						<div class="grid md:grid-cols-2 gap-6">
+							<div>
+								<label class="block text-sm font-medium text-gray-700 mb-2">
+									Departure
+								</label>
+								<div class="space-y-2">
+									<select 
+										name="departureTimezone"
+										class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent"
+										required
+									>
+										<option value="">Select timezone</option>
+										<option value="PST">PST (Los Angeles)</option>
+										<option value="EST">EST (New York)</option>
+										<option value="GMT">GMT (London)</option>
+										<option value="CET">CET (Paris/Berlin)</option>
+										<option value="JST">JST (Tokyo)</option>
+										<option value="AEST">AEST (Sydney)</option>
+										<option value="HKT">HKT (Hong Kong)</option>
+										<option value="SGT">SGT (Singapore)</option>
+										<option value="IST">IST (Mumbai)</option>
+									</select>
+									<input 
+										type="datetime-local" 
+										name="departureTime"
+										class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent"
+										required
+									/>
+								</div>
+							</div>
+							
+							<div>
+								<label class="block text-sm font-medium text-gray-700 mb-2">
+									Arrival
+								</label>
+								<div class="space-y-2">
+									<select 
+										name="arrivalTimezone"
+										class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent"
+										required
+									>
+										<option value="">Select timezone</option>
+										<option value="PST">PST (Los Angeles)</option>
+										<option value="EST">EST (New York)</option>
+										<option value="GMT">GMT (London)</option>
+										<option value="CET">CET (Paris/Berlin)</option>
+										<option value="JST">JST (Tokyo)</option>
+										<option value="AEST">AEST (Sydney)</option>
+										<option value="HKT">HKT (Hong Kong)</option>
+										<option value="SGT">SGT (Singapore)</option>
+										<option value="IST">IST (Mumbai)</option>
+									</select>
+									<input 
+										type="datetime-local" 
+										name="arrivalTime"
+										class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent"
+										required
+									/>
+								</div>
+							</div>
+						</div>
+
+						<div>
+							<label class="block text-sm font-medium text-gray-700 mb-2">
+								Your Sleep Schedule
+							</label>
+							<div class="grid grid-cols-2 gap-4">
+								<div>
+									<label class="text-sm text-gray-600">Usual bedtime</label>
+									<input 
+										type="time" 
+										name="usualBedtime"
+										value="23:00"
+										class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent"
+										required
+									/>
+								</div>
+								<div>
+									<label class="text-sm text-gray-600">Usual wake time</label>
+									<input 
+										type="time" 
+										name="usualWakeTime"
+										value="07:00"
+										class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent"
+										required
+									/>
+								</div>
+							</div>
+						</div>
+
+						<button 
+							type="submit"
+							class="w-full bg-sky-600 hover:bg-sky-700 text-white font-semibold py-4 px-6 rounded-lg transition-colors"
+						>
+							Generate My Schedule ✨
+						</button>
+					</form>
+				</div>
+
+				<div class="grid md:grid-cols-3 gap-6 mb-8">
+					<div class="bg-white rounded-lg p-6 text-center shadow-sm">
+						<span class="text-3xl mb-3 block">🧪</span>
+						<h3 class="font-semibold mb-2">Science-Based</h3>
+						<p class="text-gray-600 text-sm">Using proven circadian rhythm research</p>
+					</div>
+					<div class="bg-white rounded-lg p-6 text-center shadow-sm">
+						<span class="text-3xl mb-3 block">💰</span>
+						<h3 class="font-semibold mb-2">Completely Free</h3>
+						<p class="text-gray-600 text-sm">No subscription fees or per-trip charges</p>
+					</div>
+					<div class="bg-white rounded-lg p-6 text-center shadow-sm">
+						<span class="text-3xl mb-3 block">📱</span>
+						<h3 class="font-semibold mb-2">Works Offline</h3>
+						<p class="text-gray-600 text-sm">Access your plan anywhere, anytime</p>
+					</div>
+				</div>
+
+				<div class="bg-sky-50 rounded-lg p-6 text-center">
+					<h3 class="font-semibold text-sky-800 mb-2">💡 How It Works</h3>
+					<p class="text-sky-700">
+						Get personalized recommendations for light exposure, sleep timing, and meal scheduling 
+						to minimize jet lag and help you feel great at your destination.
+					</p>
+				</div>
+			</main>
+		</div>
+
+		<script>
+			document.getElementById('jetlag-form')?.addEventListener('submit', function(e) {
+				e.preventDefault();
+				
+				const formData = new FormData(e.target as HTMLFormElement);
+				const travelDetails = {
+					departureTimezone: formData.get('departureTimezone') as string,
+					arrivalTimezone: formData.get('arrivalTimezone') as string,
+					departureTime: formData.get('departureTime') as string,
+					arrivalTime: formData.get('arrivalTime') as string,
+					usualBedtime: formData.get('usualBedtime') as string,
+					usualWakeTime: formData.get('usualWakeTime') as string,
+				};
+
+				// Simple client-side calculation for demo
+				const timezones: Record<string, number> = {
+					'PST': -8, 'EST': -5, 'GMT': 0, 'CET': 1, 'JST': 9, 
+					'AEST': 10, 'HKT': 8, 'SGT': 8, 'IST': 5.5
+				};
+				
+				const depOffset = timezones[travelDetails.departureTimezone] || 0;
+				const arrOffset = timezones[travelDetails.arrivalTimezone] || 0;
+				const timeDiff = arrOffset - depOffset;
+				const direction = timeDiff > 0 ? 'eastward' : 'westward';
+				const timeZonesDifference = Math.abs(timeDiff);
+				
+				const plan = {
+					travelDetails,
+					timeZonesDifference,
+					direction,
+					estimatedAdjustmentDays: Math.ceil(timeZonesDifference * 0.8)
+				};
+				
+				// Store the plan in localStorage to pass to results page
+				localStorage.setItem('jetlagPlan', JSON.stringify(plan));
+				
+				// Navigate to results page
+				window.location.href = '/plan';
+			});
+		</script>
 	</body>
 </html>

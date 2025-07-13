@@ -1,0 +1,130 @@
+---
+// Component for the jet lag planning form
+---
+
+<form id="jetlag-form" class="space-y-6">
+  <div class="grid md:grid-cols-2 gap-6">
+    <div>
+      <label class="block text-sm font-medium text-gray-700 mb-2">
+        Departure
+      </label>
+      <div class="space-y-2">
+        <select 
+          name="departureTimezone"
+          class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent"
+          required
+        >
+          <option value="">Select timezone</option>
+          <option value="PST">PST (Los Angeles)</option>
+          <option value="EST">EST (New York)</option>
+          <option value="GMT">GMT (London)</option>
+          <option value="CET">CET (Paris/Berlin)</option>
+          <option value="JST">JST (Tokyo)</option>
+          <option value="AEST">AEST (Sydney)</option>
+          <option value="HKT">HKT (Hong Kong)</option>
+          <option value="SGT">SGT (Singapore)</option>
+          <option value="IST">IST (Mumbai)</option>
+        </select>
+        <input 
+          type="datetime-local" 
+          name="departureTime"
+          class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent"
+          required
+        />
+      </div>
+    </div>
+    
+    <div>
+      <label class="block text-sm font-medium text-gray-700 mb-2">
+        Arrival
+      </label>
+      <div class="space-y-2">
+        <select 
+          name="arrivalTimezone"
+          class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent"
+          required
+        >
+          <option value="">Select timezone</option>
+          <option value="PST">PST (Los Angeles)</option>
+          <option value="EST">EST (New York)</option>
+          <option value="GMT">GMT (London)</option>
+          <option value="CET">CET (Paris/Berlin)</option>
+          <option value="JST">JST (Tokyo)</option>
+          <option value="AEST">AEST (Sydney)</option>
+          <option value="HKT">HKT (Hong Kong)</option>
+          <option value="SGT">SGT (Singapore)</option>
+          <option value="IST">IST (Mumbai)</option>
+        </select>
+        <input 
+          type="datetime-local" 
+          name="arrivalTime"
+          class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent"
+          required
+        />
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <label class="block text-sm font-medium text-gray-700 mb-2">
+      Your Sleep Schedule
+    </label>
+    <div class="grid grid-cols-2 gap-4">
+      <div>
+        <label class="text-sm text-gray-600">Usual bedtime</label>
+        <input 
+          type="time" 
+          name="usualBedtime"
+          value="23:00"
+          class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent"
+          required
+        />
+      </div>
+      <div>
+        <label class="text-sm text-gray-600">Usual wake time</label>
+        <input 
+          type="time" 
+          name="usualWakeTime"
+          value="07:00"
+          class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent"
+          required
+        />
+      </div>
+    </div>
+  </div>
+
+  <button 
+    type="submit"
+    class="w-full bg-sky-600 hover:bg-sky-700 text-white font-semibold py-4 px-6 rounded-lg transition-colors"
+  >
+    Generate My Schedule ✨
+  </button>
+</form>
+
+<script>
+  import { JetLagCalculator } from '../lib/jetlag-calculator.ts';
+
+  document.getElementById('jetlag-form')?.addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(e.target as HTMLFormElement);
+    const travelDetails = {
+      departureTimezone: formData.get('departureTimezone') as string,
+      arrivalTimezone: formData.get('arrivalTimezone') as string,
+      departureTime: formData.get('departureTime') as string,
+      arrivalTime: formData.get('arrivalTime') as string,
+      usualBedtime: formData.get('usualBedtime') as string,
+      usualWakeTime: formData.get('usualWakeTime') as string,
+    };
+
+    // Calculate the jet lag plan
+    const plan = JetLagCalculator.calculateJetLagPlan(travelDetails);
+    
+    // Store the plan in localStorage to pass to results page
+    localStorage.setItem('jetlagPlan', JSON.stringify(plan));
+    localStorage.setItem('travelDetails', JSON.stringify(travelDetails));
+    
+    // Navigate to results page
+    window.location.href = '/plan';
+  });
+</script>

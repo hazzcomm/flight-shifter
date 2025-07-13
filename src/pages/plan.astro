@@ -1,0 +1,254 @@
+---
+import packageJson from '../../package.json';
+const version = packageJson.version;
+
+// In a real app, this would come from form submission or URL params
+const samplePlan = {
+  timeZonesDifference: 8,
+  direction: 'eastward' as const,
+  estimatedAdjustmentDays: 6,
+  preTravelDays: [
+    [
+      {
+        time: '07:00',
+        action: 'bright_light' as const,
+        description: 'Get bright light exposure (10,000+ lux) - outdoor sunlight or light therapy box',
+        intensity: '10,000+ lux'
+      },
+      {
+        time: '19:00',
+        action: 'avoid_light' as const,
+        description: 'Start dimming lights, avoid screens. Use blue light filters.'
+      }
+    ]
+  ],
+  travelDay: [
+    {
+      time: 'During flight',
+      action: 'avoid_light' as const,
+      description: 'Keep cabin lights dim, wear eye mask, try to sleep if it\'s nighttime at destination'
+    },
+    {
+      time: 'Upon arrival morning',
+      action: 'bright_light' as const,
+      description: 'Get outdoor sunlight immediately upon arrival if it\'s morning at destination',
+      intensity: 'Natural sunlight'
+    }
+  ],
+  postTravelDays: [
+    [
+      {
+        time: '06:00',
+        action: 'bright_light' as const,
+        description: 'Get morning sunlight - go outside within 30 minutes of waking',
+        intensity: 'Natural sunlight'
+      },
+      {
+        time: '19:00',
+        action: 'avoid_light' as const,
+        description: 'Start dimming lights 2-3 hours before intended bedtime'
+      }
+    ]
+  ],
+  sleepSchedule: {
+    newBedtime: '15:00',
+    newWakeTime: '23:00',
+    adjustmentPhase: 'Major adjustment needed'
+  }
+};
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="generator" content={Astro.generator} />
+    <meta name="description" content="Your personalized jet lag prevention plan - science-based light exposure schedule" />
+    <meta name="theme-color" content="#0ea5e9" />
+    <title>Your Jet Lag Plan - Flight Shifter</title>
+  </head>
+  <body class="bg-gray-50 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+      <header class="text-center mb-8">
+        <div class="flex items-center justify-center gap-2 mb-4">
+          <span class="text-3xl">✈️</span>
+          <h1 class="text-3xl font-bold text-sky-600">Flight Shifter</h1>
+          <span class="text-sm text-gray-500 bg-gray-200 px-2 py-1 rounded">v{version}</span>
+        </div>
+        <a href="/" class="text-sky-600 hover:text-sky-800 underline">← Back to planner</a>
+      </header>
+
+      <main class="max-w-4xl mx-auto">
+        <!-- Plan Overview -->
+        <div class="bg-white rounded-xl shadow-lg p-8 mb-8">
+          <div class="flex items-center gap-3 mb-6">
+            <span class="text-2xl">🧭</span>
+            <h2 class="text-2xl font-bold text-gray-800">Your Jet Lag Plan</h2>
+          </div>
+          
+          <div class="grid md:grid-cols-3 gap-6 mb-6">
+            <div class="text-center p-4 bg-sky-50 rounded-lg">
+              <div class="text-2xl font-bold text-sky-600">{samplePlan.timeZonesDifference}</div>
+              <div class="text-sm text-gray-600">Time zones</div>
+            </div>
+            <div class="text-center p-4 bg-green-50 rounded-lg">
+              <div class="text-2xl font-bold text-green-600">{samplePlan.estimatedAdjustmentDays}</div>
+              <div class="text-sm text-gray-600">Adjustment days</div>
+            </div>
+            <div class="text-center p-4 bg-orange-50 rounded-lg">
+              <div class="text-lg font-bold text-orange-600 capitalize">{samplePlan.direction}</div>
+              <div class="text-sm text-gray-600">Travel direction</div>
+            </div>
+          </div>
+
+          <div class="bg-blue-50 border-l-4 border-blue-400 p-4 rounded">
+            <p class="text-blue-800">
+              <strong>Strategy:</strong> {samplePlan.direction === 'eastward' ? 
+                'Advance your clock with morning light and evening darkness' : 
+                'Delay your clock with evening light and morning darkness'}
+            </p>
+          </div>
+        </div>
+
+        <!-- Pre-Travel Schedule -->
+        <div class="bg-white rounded-xl shadow-lg p-8 mb-8">
+          <div class="flex items-center gap-3 mb-6">
+            <span class="text-2xl">📅</span>
+            <h3 class="text-xl font-bold text-gray-800">3 Days Before Travel</h3>
+          </div>
+          
+          {samplePlan.preTravelDays.map((day, dayIndex) => (
+            <div class="mb-6 last:mb-0">
+              <h4 class="font-semibold text-gray-700 mb-3">Day {dayIndex + 1}</h4>
+              <div class="space-y-3">
+                {day.map((rec, recIndex) => (
+                  <div key={recIndex} class="flex items-start gap-4 p-4 bg-gray-50 rounded-lg">
+                    <div class="flex-shrink-0">
+                      <span class={`inline-block w-3 h-3 rounded-full ${
+                        rec.action === 'bright_light' ? 'bg-yellow-400' :
+                        rec.action === 'avoid_light' ? 'bg-gray-400' :
+                        rec.action === 'dim_light' ? 'bg-orange-300' : 'bg-blue-400'
+                      }`}></span>
+                    </div>
+                    <div class="flex-grow">
+                      <div class="flex items-center gap-2 mb-1">
+                        <span class="font-medium text-gray-800">{rec.time}</span>
+                        <span class={`text-xs px-2 py-1 rounded-full ${
+                          rec.action === 'bright_light' ? 'bg-yellow-100 text-yellow-800' :
+                          rec.action === 'avoid_light' ? 'bg-gray-100 text-gray-800' :
+                          rec.action === 'dim_light' ? 'bg-orange-100 text-orange-800' : 'bg-blue-100 text-blue-800'
+                        }`}>
+                          {rec.action.replace('_', ' ')}
+                        </span>
+                        {rec.intensity && (
+                          <span class="text-xs text-gray-500">({rec.intensity})</span>
+                        )}
+                      </div>
+                      <p class="text-gray-600 text-sm">{rec.description}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <!-- Travel Day -->
+        <div class="bg-white rounded-xl shadow-lg p-8 mb-8">
+          <div class="flex items-center gap-3 mb-6">
+            <span class="text-2xl">🛫</span>
+            <h3 class="text-xl font-bold text-gray-800">Travel Day</h3>
+          </div>
+          
+          <div class="space-y-3">
+            {samplePlan.travelDay.map((rec, index) => (
+              <div key={index} class="flex items-start gap-4 p-4 bg-sky-50 rounded-lg">
+                <div class="flex-shrink-0">
+                  <span class={`inline-block w-3 h-3 rounded-full ${
+                    rec.action === 'bright_light' ? 'bg-yellow-400' :
+                    rec.action === 'avoid_light' ? 'bg-gray-400' :
+                    rec.action === 'dim_light' ? 'bg-orange-300' : 'bg-blue-400'
+                  }`}></span>
+                </div>
+                <div class="flex-grow">
+                  <div class="flex items-center gap-2 mb-1">
+                    <span class="font-medium text-gray-800">{rec.time}</span>
+                    <span class={`text-xs px-2 py-1 rounded-full ${
+                      rec.action === 'bright_light' ? 'bg-yellow-100 text-yellow-800' :
+                      rec.action === 'avoid_light' ? 'bg-gray-100 text-gray-800' :
+                      rec.action === 'dim_light' ? 'bg-orange-100 text-orange-800' : 'bg-blue-100 text-blue-800'
+                    }`}>
+                      {rec.action.replace('_', ' ')}
+                    </span>
+                    {rec.intensity && (
+                      <span class="text-xs text-gray-500">({rec.intensity})</span>
+                    )}
+                  </div>
+                  <p class="text-gray-600 text-sm">{rec.description}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <!-- Post-Travel Schedule -->
+        <div class="bg-white rounded-xl shadow-lg p-8 mb-8">
+          <div class="flex items-center gap-3 mb-6">
+            <span class="text-2xl">🏁</span>
+            <h3 class="text-xl font-bold text-gray-800">After Arrival</h3>
+          </div>
+          
+          {samplePlan.postTravelDays.map((day, dayIndex) => (
+            <div class="mb-6 last:mb-0">
+              <h4 class="font-semibold text-gray-700 mb-3">Day {dayIndex + 1} at destination</h4>
+              <div class="space-y-3">
+                {day.map((rec, recIndex) => (
+                  <div key={recIndex} class="flex items-start gap-4 p-4 bg-green-50 rounded-lg">
+                    <div class="flex-shrink-0">
+                      <span class={`inline-block w-3 h-3 rounded-full ${
+                        rec.action === 'bright_light' ? 'bg-yellow-400' :
+                        rec.action === 'avoid_light' ? 'bg-gray-400' :
+                        rec.action === 'dim_light' ? 'bg-orange-300' : 'bg-blue-400'
+                      }`}></span>
+                    </div>
+                    <div class="flex-grow">
+                      <div class="flex items-center gap-2 mb-1">
+                        <span class="font-medium text-gray-800">{rec.time}</span>
+                        <span class={`text-xs px-2 py-1 rounded-full ${
+                          rec.action === 'bright_light' ? 'bg-yellow-100 text-yellow-800' :
+                          rec.action === 'avoid_light' ? 'bg-gray-100 text-gray-800' :
+                          rec.action === 'dim_light' ? 'bg-orange-100 text-orange-800' : 'bg-blue-100 text-blue-800'
+                        }`}>
+                          {rec.action.replace('_', ' ')}
+                        </span>
+                        {rec.intensity && (
+                          <span class="text-xs text-gray-500">({rec.intensity})</span>
+                        )}
+                      </div>
+                      <p class="text-gray-600 text-sm">{rec.description}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <!-- Tips & Notes -->
+        <div class="bg-amber-50 border border-amber-200 rounded-xl p-6">
+          <h3 class="font-bold text-amber-800 mb-4 flex items-center gap-2">
+            <span>💡</span> Pro Tips
+          </h3>
+          <ul class="space-y-2 text-amber-700 text-sm">
+            <li>• Natural sunlight is always better than artificial light when possible</li>
+            <li>• Light therapy boxes should be 10,000 lux for maximum effectiveness</li>
+            <li>• Blue light blocking glasses help when you need to avoid light</li>
+            <li>• Stay hydrated and avoid alcohol during adjustment period</li>
+            <li>• Individual results may vary - listen to your body</li>
+          </ul>
+        </div>
+      </main>
+    </div>
+  </body>
+</html>
