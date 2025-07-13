@@ -1,0 +1,164 @@
+---
+import packageJson from '../../package.json';
+const version = packageJson.version;
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="generator" content={Astro.generator} />
+    <meta name="description" content="Pre-flight jet lag preparation summary - quick daily schedule" />
+    <meta name="theme-color" content="#0ea5e9" />
+    <title>Pre-Flight Schedule - Flight Shifter</title>
+  </head>
+  <body class="bg-gray-50 min-h-screen">
+    <div class="container mx-auto px-4 py-6">
+      <header class="text-center mb-6">
+        <div class="flex items-center justify-center gap-2 mb-3">
+          <span class="text-2xl">✈️</span>
+          <h1 class="text-2xl font-bold text-sky-600">Flight Shifter</h1>
+          <span class="text-sm text-gray-500 bg-gray-200 px-2 py-1 rounded">v{version}</span>
+        </div>
+        <div class="flex gap-4 justify-center text-sm">
+          <a href="/" class="text-sky-600 hover:text-sky-800 underline">← Back to planner</a>
+          <a href="/plan" class="text-sky-600 hover:text-sky-800 underline">Full schedule →</a>
+        </div>
+      </header>
+
+      <main class="max-w-2xl mx-auto">
+        <!-- Trip Overview -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+          <h2 class="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+            <span>🧳</span> Your Trip Summary
+          </h2>
+          <div id="trip-overview" class="space-y-2 text-sm text-gray-600">
+            <!-- Will be populated by JavaScript -->
+          </div>
+        </div>
+
+        <!-- Pre-Flight Schedule -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+          <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+            <span>📅</span> Next Few Days (Before Flight)
+          </h3>
+          <div id="pre-flight-schedule" class="space-y-4">
+            <!-- Will be populated by JavaScript -->
+          </div>
+        </div>
+
+        <!-- Quick Tips -->
+        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <h3 class="font-semibold text-blue-800 mb-2 flex items-center gap-2">
+            <span>💡</span> Quick Reminders
+          </h3>
+          <ul class="space-y-1 text-blue-700 text-sm">
+            <li>• Set phone reminders for light exposure times</li>
+            <li>• Start adjusting gradually - don't shock your system</li>
+            <li>• Outdoor sunlight is always best when possible</li>
+            <li>• Download offline maps of your destination</li>
+          </ul>
+        </div>
+      </main>
+    </div>
+
+    <script>
+      // Load travel plan from localStorage
+      const planData = localStorage.getItem('jetlagPlan');
+      
+      if (planData) {
+        const plan = JSON.parse(planData);
+        
+        // Populate trip overview
+        const overviewDiv = document.getElementById('trip-overview');
+        if (overviewDiv && plan.travelDetails) {
+          const depDate = new Date(plan.travelDetails.departureTime);
+          const arrDate = new Date(plan.travelDetails.arrivalTime);
+          
+          overviewDiv.innerHTML = `
+            <div><strong>From:</strong> ${plan.travelDetails.departureTimezone} → <strong>To:</strong> ${plan.travelDetails.arrivalTimezone}</div>
+            <div><strong>Departure:</strong> ${depDate.toLocaleString()}</div>
+            <div><strong>Arrival:</strong> ${arrDate.toLocaleString()} (${plan.arrivalLocalTime || 'local time'})</div>
+            <div><strong>Time zones:</strong> ${plan.timeZonesDifference} (${plan.direction})</div>
+            <div><strong>Flight duration:</strong> ~${plan.flightDuration || 'calculating...'} hours</div>
+            <div><strong>Estimated adjustment:</strong> ${plan.estimatedAdjustmentDays} days</div>
+          `;
+        }
+        
+        // Generate simple pre-flight schedule
+        const scheduleDiv = document.getElementById('pre-flight-schedule');
+        if (scheduleDiv) {
+          const today = new Date();
+          const depDate = new Date(plan.travelDetails?.departureTime || today);
+          const daysUntilFlight = Math.ceil((depDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+          
+          let scheduleHTML = '';
+          
+          for (let day = 0; day < Math.min(daysUntilFlight, 3); day++) {
+            const currentDate = new Date(today);
+            currentDate.setDate(today.getDate() + day);
+            const dayName = day === 0 ? 'Today' : day === 1 ? 'Tomorrow' : currentDate.toLocaleDateString('en-US', { weekday: 'long' });
+            
+            scheduleHTML += `
+              <div class="border-l-4 border-sky-500 pl-4 py-2">
+                <h4 class="font-semibold text-gray-800">${dayName} (Day ${day + 1})</h4>
+                <div class="text-sm text-gray-600 space-y-1">
+            `;
+            
+            if (plan.direction === 'eastward') {
+              scheduleHTML += `
+                <div>🌅 <strong>Early morning:</strong> Get bright light (outdoor or 10,000+ lux)</div>
+                <div>🌙 <strong>Evening:</strong> Start dimming lights ${day + 1} hour(s) earlier</div>
+              `;
+            } else {
+              scheduleHTML += `
+                <div>🕶️ <strong>Morning:</strong> Keep lights dim, wear sunglasses outside</div>
+                <div>💡 <strong>Evening:</strong> Seek bright light exposure later</div>
+              `;
+            }
+            
+            scheduleHTML += `
+                </div>
+              </div>
+            `;
+          }
+          
+          if (daysUntilFlight <= 0) {
+            scheduleHTML = `
+              <div class="text-center py-8">
+                <span class="text-4xl">🛫</span>
+                <h3 class="text-lg font-semibold text-gray-800 mt-2">Flight Day!</h3>
+                <p class="text-gray-600">Check your full schedule for travel day recommendations</p>
+                <a href="/plan" class="inline-block mt-4 bg-sky-600 text-white px-4 py-2 rounded-lg hover:bg-sky-700">
+                  View Full Schedule
+                </a>
+              </div>
+            `;
+          } else if (daysUntilFlight > 3) {
+            scheduleHTML += `
+              <div class="text-center py-4 text-gray-500">
+                <p>Start your preparation 3 days before departure</p>
+                <p class="text-sm">Come back ${daysUntilFlight - 3} days before your flight</p>
+              </div>
+            `;
+          }
+          
+          scheduleDiv.innerHTML = scheduleHTML;
+        }
+      } else {
+        // No plan data found
+        document.querySelector('main').innerHTML = `
+          <div class="text-center py-12">
+            <span class="text-6xl">📋</span>
+            <h2 class="text-xl font-semibold text-gray-800 mt-4">No Plan Found</h2>
+            <p class="text-gray-600 mt-2">Please create your jet lag plan first</p>
+            <a href="/" class="inline-block mt-6 bg-sky-600 text-white px-6 py-3 rounded-lg hover:bg-sky-700">
+              Create Plan
+            </a>
+          </div>
+        `;
+      }
+    </script>
+  </body>
+</html>
