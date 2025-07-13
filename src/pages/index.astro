@@ -416,9 +416,11 @@ const version = packageJson.version;
 						<div>• Stay hydrated and avoid alcohol</div>
 					`;
 				} else {
-					// Calculate today's specific adjustments
+					// Calculate today's specific adjustments - much more gradual
 					const adjustmentDay = Math.min(3, 4 - daysUntilFlight);
-					const dailyShift = Math.min(1, plan.timeZonesDifference / 3);
+					const maxDailyShift = 0.75; // 45 minutes max per day
+					const totalDays = Math.max(3, Math.min(plan.timeZonesDifference, 7));
+					const dailyShift = Math.min(maxDailyShift, plan.timeZonesDifference / totalDays);
 					const todaysShift = dailyShift * adjustmentDay;
 					
 					if (plan.direction === 'eastward') {
@@ -447,15 +449,18 @@ const version = packageJson.version;
 						const [bedHour, bedMin] = originalBedtime.split(':').map(Number);
 						const [wakeHour, wakeMin] = originalWakeTime.split(':').map(Number);
 						
-						const targetBedtime = Math.min(bedHour + todaysShift, 1);
-						const targetWakeTime = Math.min(wakeHour + todaysShift, 10);
+						// Much more conservative westward adjustment
+						const maxBedtimeShift = Math.min(2, todaysShift); // Never more than 2 hours later
+						const targetBedtime = Math.min(bedHour + maxBedtimeShift, bedHour + 2);
+						const targetWakeTime = Math.min(wakeHour + maxBedtimeShift, wakeHour + 2);
 						
 						schedule = `
-							<div class="font-medium text-sky-800">🌙 Delaying your schedule (Day ${adjustmentDay})</div>
+							<div class="font-medium text-sky-800">🌙 Delaying your schedule (Day ${adjustmentDay}) - Gradual approach</div>
 							<div><strong>06:00-10:00:</strong> 🕶️ Keep lights dim, wear sunglasses</div>
-							<div><strong>${Math.floor(targetWakeTime)}:${((targetWakeTime % 1) * 60).toFixed(0).padStart(2, '0')}:</strong> 😴 WAKE UP (${(todaysShift * 60).toFixed(0)} min later)</div>
-							<div><strong>18:00-22:00:</strong> 🌅 Bright light exposure to delay clock</div>
-							<div><strong>${Math.floor(targetBedtime)}:${((targetBedtime % 1) * 60).toFixed(0).padStart(2, '0')}:</strong> 😴 GO TO BED (${(todaysShift * 60).toFixed(0)} min later)</div>
+							<div><strong>${Math.floor(targetWakeTime)}:${((targetWakeTime % 1) * 60).toFixed(0).padStart(2, '0')}:</strong> 😴 WAKE UP (${(maxBedtimeShift * 60).toFixed(0)} min later - realistic!)</div>
+							<div><strong>16:00-${Math.floor(targetBedtime - 1)}:00:</strong> 🌅 Bright light exposure to gradually delay clock</div>
+							<div><strong>${Math.floor(targetBedtime - 1)}:${((((targetBedtime - 1) % 1) * 60).toFixed(0).padStart(2, '0'))}:</strong> 🌙 Start dimming lights</div>
+							<div><strong>${Math.floor(targetBedtime)}:${((targetBedtime % 1) * 60).toFixed(0).padStart(2, '0')}:</strong> 😴 GO TO BED (${(maxBedtimeShift * 60).toFixed(0)} min later - doable!)</div>
 							<div><strong>Naps:</strong> ✅ <30 min, before 3 PM, 8+ hrs before bed</div>
 						`;
 					}
