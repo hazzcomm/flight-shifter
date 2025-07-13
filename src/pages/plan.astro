@@ -325,8 +325,18 @@ const samplePlan = {
         const [bedHour, bedMin] = originalBedtime.split(':').map(Number);
         const [wakeHour, wakeMin] = originalWakeTime.split(':').map(Number);
         
-        const maxDailyShift = 0.75; // 45 minutes max per day
-        const totalDays = Math.max(3, Math.min(plan.timeZonesDifference, 7));
+        // More aggressive adjustment for large timezone differences
+        let maxDailyShift, totalDays;
+        if (plan.timeZonesDifference <= 6) {
+          maxDailyShift = 0.75; // 45 minutes for small differences
+          totalDays = Math.max(3, plan.timeZonesDifference);
+        } else if (plan.timeZonesDifference <= 12) {
+          maxDailyShift = 1.5; // 90 minutes for medium differences
+          totalDays = Math.max(3, Math.ceil(plan.timeZonesDifference / 1.5));
+        } else {
+          maxDailyShift = 2.5; // 2.5 hours for huge differences (like SYD-LA)
+          totalDays = Math.max(3, Math.ceil(plan.timeZonesDifference / 2.5));
+        }
         const dailyShift = Math.min(maxDailyShift, plan.timeZonesDifference / totalDays);
         let scheduleHTML = '';
 
