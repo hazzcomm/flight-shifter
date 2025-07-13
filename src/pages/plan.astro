@@ -123,43 +123,12 @@ const samplePlan = {
         <div class="bg-white rounded-xl shadow-lg p-8 mb-8">
           <div class="flex items-center gap-3 mb-6">
             <span class="text-2xl">📅</span>
-            <h3 class="text-xl font-bold text-gray-800">3 Days Before Travel</h3>
+            <h3 class="text-xl font-bold text-gray-800">Pre-Travel Preparation</h3>
           </div>
           
-          {samplePlan.preTravelDays.map((day, dayIndex) => (
-            <div class="mb-6 last:mb-0">
-              <h4 class="font-semibold text-gray-700 mb-3">Day {dayIndex + 1}</h4>
-              <div class="space-y-3">
-                {day.map((rec, recIndex) => (
-                  <div key={recIndex} class="flex items-start gap-4 p-4 bg-gray-50 rounded-lg">
-                    <div class="flex-shrink-0">
-                      <span class={`inline-block w-3 h-3 rounded-full ${
-                        rec.action === 'bright_light' ? 'bg-yellow-400' :
-                        rec.action === 'avoid_light' ? 'bg-gray-400' :
-                        rec.action === 'dim_light' ? 'bg-orange-300' : 'bg-blue-400'
-                      }`}></span>
-                    </div>
-                    <div class="flex-grow">
-                      <div class="flex items-center gap-2 mb-1">
-                        <span class="font-medium text-gray-800">{rec.time}</span>
-                        <span class={`text-xs px-2 py-1 rounded-full ${
-                          rec.action === 'bright_light' ? 'bg-yellow-100 text-yellow-800' :
-                          rec.action === 'avoid_light' ? 'bg-gray-100 text-gray-800' :
-                          rec.action === 'dim_light' ? 'bg-orange-100 text-orange-800' : 'bg-blue-100 text-blue-800'
-                        }`}>
-                          {rec.action.replace('_', ' ')}
-                        </span>
-                        {rec.intensity && (
-                          <span class="text-xs text-gray-500">({rec.intensity})</span>
-                        )}
-                      </div>
-                      <p class="text-gray-600 text-sm">{rec.description}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
+          <div id="detailed-pre-travel-schedule">
+            <!-- Will be populated by JavaScript with comprehensive schedules -->
+          </div>
         </div>
 
         <!-- Travel Day -->
@@ -336,6 +305,136 @@ const samplePlan = {
           reader.readAsText(file);
         }
       });
+
+      // Populate detailed pre-travel schedule on page load
+      document.addEventListener('DOMContentLoaded', function() {
+        const planData = localStorage.getItem('jetlagPlan');
+        if (planData) {
+          const plan = JSON.parse(planData);
+          populateDetailedSchedule(plan);
+        }
+      });
+
+      function populateDetailedSchedule(plan) {
+        const scheduleDiv = document.getElementById('detailed-pre-travel-schedule');
+        if (!scheduleDiv || !plan.travelDetails) return;
+
+        const originalBedtime = plan.travelDetails.usualBedtime || '23:00';
+        const originalWakeTime = plan.travelDetails.usualWakeTime || '07:00';
+        
+        const [bedHour, bedMin] = originalBedtime.split(':').map(Number);
+        const [wakeHour, wakeMin] = originalWakeTime.split(':').map(Number);
+        
+        const dailyShift = Math.min(1, plan.timeZonesDifference / 3);
+        let scheduleHTML = '';
+
+        for (let day = 1; day <= 3; day++) {
+          const todaysShift = dailyShift * day;
+          const dayName = day === 1 ? 'Tomorrow' : day === 2 ? 'Day 2' : 'Day 3 (Flight Day - 1)';
+          
+          scheduleHTML += `
+            <div class="border-l-4 border-sky-500 pl-6 pb-6 mb-6 last:mb-0">
+              <h4 class="font-bold text-sky-800 text-lg mb-4">${dayName}</h4>
+          `;
+          
+          if (plan.direction === 'eastward') {
+            const targetBedtime = Math.max(bedHour - todaysShift, Math.max(bedHour - 3, 19));
+            const targetWakeTime = Math.max(wakeHour - todaysShift, Math.max(wakeHour - 3, 5));
+            const lightDimTime = Math.max(targetBedtime - 2, 18);
+            
+            scheduleHTML += `
+              <div class="bg-blue-50 p-4 rounded-lg mb-4">
+                <div class="font-bold text-blue-800 mb-2">😴 SLEEP SCHEDULE</div>
+                <div class="grid grid-cols-2 gap-4 text-sm">
+                  <div><strong>Wake up:</strong> ${Math.floor(targetWakeTime)}:${((targetWakeTime % 1) * 60).toFixed(0).padStart(2, '0')}</div>
+                  <div><strong>Go to bed:</strong> ${Math.floor(targetBedtime)}:${((targetBedtime % 1) * 60).toFixed(0).padStart(2, '0')}</div>
+                </div>
+                <div class="text-xs text-blue-600 mt-1">(${(todaysShift * 60).toFixed(0)} minutes earlier than usual)</div>
+              </div>
+              
+              <div class="space-y-3 text-sm">
+                <div class="flex items-start gap-3">
+                  <span class="text-lg">😴</span>
+                  <div><strong>${Math.floor(targetWakeTime)}:${((targetWakeTime % 1) * 60).toFixed(0).padStart(2, '0')}</strong> - WAKE UP and immediately get bright light (go outside if possible)</div>
+                </div>
+                <div class="flex items-start gap-3">
+                  <span class="text-lg">🌅</span>
+                  <div><strong>06:00-10:00</strong> - Bright light therapy session (10,000+ lux outdoor sunlight preferred)</div>
+                </div>
+                <div class="flex items-start gap-3">
+                  <span class="text-lg">🍽️</span>
+                  <div><strong>12:00-14:00</strong> - Normal lunch, avoid heavy meals that can affect sleep</div>
+                </div>
+                <div class="flex items-start gap-3">
+                  <span class="text-lg">🌙</span>
+                  <div><strong>${Math.floor(lightDimTime)}:${((lightDimTime % 1) * 60).toFixed(0).padStart(2, '0')}</strong> - Start dimming ALL lights, turn on blue light filters</div>
+                </div>
+                <div class="flex items-start gap-3">
+                  <span class="text-lg">😴</span>
+                  <div><strong>${Math.floor(targetBedtime)}:${((targetBedtime % 1) * 60).toFixed(0).padStart(2, '0')}</strong> - GO TO BED (no screens, complete darkness)</div>
+                </div>
+                <div class="flex items-start gap-3">
+                  <span class="text-lg">⚠️</span>
+                  <div><strong>Naps:</strong> AVOID or maximum 20 minutes before 2 PM only</div>
+                </div>
+                <div class="flex items-start gap-3">
+                  <span class="text-lg">☕</span>
+                  <div><strong>Caffeine:</strong> Stop all caffeine by 2 PM to avoid sleep interference</div>
+                </div>
+              </div>
+            `;
+          } else {
+            const targetBedtime = Math.min(bedHour + todaysShift, Math.min(bedHour + 3, 2));
+            const targetWakeTime = Math.min(wakeHour + todaysShift, Math.min(wakeHour + 3, 11));
+            
+            scheduleHTML += `
+              <div class="bg-orange-50 p-4 rounded-lg mb-4">
+                <div class="font-bold text-orange-800 mb-2">😴 SLEEP SCHEDULE</div>
+                <div class="grid grid-cols-2 gap-4 text-sm">
+                  <div><strong>Wake up:</strong> ${Math.floor(targetWakeTime)}:${((targetWakeTime % 1) * 60).toFixed(0).padStart(2, '0')}</div>
+                  <div><strong>Go to bed:</strong> ${Math.floor(targetBedtime)}:${((targetBedtime % 1) * 60).toFixed(0).padStart(2, '0')}</div>
+                </div>
+                <div class="text-xs text-orange-600 mt-1">(${(todaysShift * 60).toFixed(0)} minutes later than usual)</div>
+              </div>
+              
+              <div class="space-y-3 text-sm">
+                <div class="flex items-start gap-3">
+                  <span class="text-lg">🕶️</span>
+                  <div><strong>06:00-10:00</strong> - Keep lights DIM, wear sunglasses outside</div>
+                </div>
+                <div class="flex items-start gap-3">
+                  <span class="text-lg">😴</span>
+                  <div><strong>${Math.floor(targetWakeTime)}:${((targetWakeTime % 1) * 60).toFixed(0).padStart(2, '0')}</strong> - WAKE UP (sleep in longer), keep lighting minimal</div>
+                </div>
+                <div class="flex items-start gap-3">
+                  <span class="text-lg">☀️</span>
+                  <div><strong>12:00-15:00</strong> - Normal indoor lighting OK, avoid bright outdoor sun</div>
+                </div>
+                <div class="flex items-start gap-3">
+                  <span class="text-lg">💤</span>
+                  <div><strong>15:00-16:00</strong> - Strategic nap window: <30 min, must end 8+ hours before bed</div>
+                </div>
+                <div class="flex items-start gap-3">
+                  <span class="text-lg">🌅</span>
+                  <div><strong>18:00-22:00</strong> - BRIGHT light exposure (10,000+ lux) to delay your clock</div>
+                </div>
+                <div class="flex items-start gap-3">
+                  <span class="text-lg">😴</span>
+                  <div><strong>${Math.floor(targetBedtime)}:${((targetBedtime % 1) * 60).toFixed(0).padStart(2, '0')}</strong> - GO TO BED (stay up later), continue bright light until bed</div>
+                </div>
+                <div class="flex items-start gap-3">
+                  <span class="text-lg">☕</span>
+                  <div><strong>Caffeine:</strong> OK later in day, can help you stay awake longer</div>
+                </div>
+              </div>
+            `;
+          }
+          
+          scheduleHTML += '</div>';
+        }
+        
+        scheduleDiv.innerHTML = scheduleHTML;
+      }
     </script>
   </body>
 </html>

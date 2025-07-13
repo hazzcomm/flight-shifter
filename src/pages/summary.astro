@@ -117,15 +117,15 @@ const version = packageJson.version;
             const [bedHour, bedMin] = originalBedtime.split(':').map(Number);
             const [wakeHour, wakeMin] = originalWakeTime.split(':').map(Number);
             
-            // Gradual adjustment: max 1 hour per day
+            // Gradual adjustment: max 1 hour per day, respecting original schedule
             const dailyShift = Math.min(1, plan.timeZonesDifference / 3);
             const todaysShift = dailyShift * day;
             
             if (plan.direction === 'eastward') {
-              // Advance sleep schedule gradually
-              const targetBedtime = Math.max(bedHour - todaysShift, 20);
-              const targetWakeTime = Math.max(wakeHour - todaysShift, 5);
-              const lightDimTime = targetBedtime - 2;
+              // Advance sleep schedule gradually (go to bed/wake earlier)
+              const targetBedtime = Math.max(bedHour - todaysShift, Math.max(bedHour - 3, 19)); // Don't go more than 3 hours or before 7 PM
+              const targetWakeTime = Math.max(wakeHour - todaysShift, Math.max(wakeHour - 3, 5)); // Don't go more than 3 hours or before 5 AM
+              const lightDimTime = Math.max(targetBedtime - 2, 18); // Dim time, not before 6 PM
               
               scheduleHTML += `
                 <div class="bg-blue-50 p-3 rounded-lg mb-3">
@@ -145,9 +145,9 @@ const version = packageJson.version;
                 </div>
               `;
             } else {
-              // Delay sleep schedule gradually
-              const targetBedtime = Math.min(bedHour + todaysShift, 1);
-              const targetWakeTime = Math.min(wakeHour + todaysShift, 10);
+              // Delay sleep schedule gradually (go to bed/wake later)
+              const targetBedtime = Math.min(bedHour + todaysShift, Math.min(bedHour + 3, 2)); // Don't go more than 3 hours or past 2 AM
+              const targetWakeTime = Math.min(wakeHour + todaysShift, Math.min(wakeHour + 3, 11)); // Don't go more than 3 hours or past 11 AM
               
               scheduleHTML += `
                 <div class="bg-orange-50 p-3 rounded-lg mb-3">
