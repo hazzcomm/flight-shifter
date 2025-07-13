@@ -422,26 +422,41 @@ const version = packageJson.version;
 					const todaysShift = dailyShift * adjustmentDay;
 					
 					if (plan.direction === 'eastward') {
-						const targetBedtime = 23 - todaysShift;
-						const targetWakeTime = 7 - todaysShift;
+						const originalBedtime = plan.travelDetails?.usualBedtime || '23:00';
+						const originalWakeTime = plan.travelDetails?.usualWakeTime || '07:00';
+						
+						const [bedHour, bedMin] = originalBedtime.split(':').map(Number);
+						const [wakeHour, wakeMin] = originalWakeTime.split(':').map(Number);
+						
+						const targetBedtime = Math.max(bedHour - todaysShift, 20);
+						const targetWakeTime = Math.max(wakeHour - todaysShift, 5);
+						const lightDimTime = targetBedtime - 2;
 						
 						schedule = `
 							<div class="font-medium text-sky-800">🌅 Advancing your schedule (Day ${adjustmentDay})</div>
-							<div><strong>06:00-10:00:</strong> Bright light (10,000+ lux)</div>
-							<div><strong>${Math.floor(targetBedtime)}:${((targetBedtime % 1) * 60).toFixed(0).padStart(2, '0')}:</strong> Start dimming lights</div>
-							<div><strong>${Math.floor(targetWakeTime)}:${((targetWakeTime % 1) * 60).toFixed(0).padStart(2, '0')}:</strong> Target wake time</div>
-							<div><strong>Naps:</strong> Avoid or <20 min before 2 PM</div>
+							<div><strong>${Math.floor(targetWakeTime)}:${((targetWakeTime % 1) * 60).toFixed(0).padStart(2, '0')}:</strong> 😴 WAKE UP and get bright light immediately</div>
+							<div><strong>06:00-10:00:</strong> 🌅 Continue bright light (10,000+ lux outdoors)</div>
+							<div><strong>${Math.floor(lightDimTime)}:${((lightDimTime % 1) * 60).toFixed(0).padStart(2, '0')}:</strong> 🌙 Start dimming all lights</div>
+							<div><strong>${Math.floor(targetBedtime)}:${((targetBedtime % 1) * 60).toFixed(0).padStart(2, '0')}:</strong> 😴 GO TO BED (${(todaysShift * 60).toFixed(0)} min earlier)</div>
+							<div><strong>Naps:</strong> ⚠️ Avoid or <20 min before 2 PM only</div>
 						`;
 					} else {
-						const targetBedtime = 23 + todaysShift;
-						const targetWakeTime = 7 + todaysShift;
+						const originalBedtime = plan.travelDetails?.usualBedtime || '23:00';
+						const originalWakeTime = plan.travelDetails?.usualWakeTime || '07:00';
+						
+						const [bedHour, bedMin] = originalBedtime.split(':').map(Number);
+						const [wakeHour, wakeMin] = originalWakeTime.split(':').map(Number);
+						
+						const targetBedtime = Math.min(bedHour + todaysShift, 1);
+						const targetWakeTime = Math.min(wakeHour + todaysShift, 10);
 						
 						schedule = `
 							<div class="font-medium text-sky-800">🌙 Delaying your schedule (Day ${adjustmentDay})</div>
-							<div><strong>06:00-10:00:</strong> Keep lights dim</div>
-							<div><strong>18:00-22:00:</strong> Bright light exposure</div>
-							<div><strong>${Math.floor(targetWakeTime)}:${((targetWakeTime % 1) * 60).toFixed(0).padStart(2, '0')}:</strong> Target wake time</div>
-							<div><strong>Naps:</strong> <30 min, before 3 PM, 8+ hrs before bed</div>
+							<div><strong>06:00-10:00:</strong> 🕶️ Keep lights dim, wear sunglasses</div>
+							<div><strong>${Math.floor(targetWakeTime)}:${((targetWakeTime % 1) * 60).toFixed(0).padStart(2, '0')}:</strong> 😴 WAKE UP (${(todaysShift * 60).toFixed(0)} min later)</div>
+							<div><strong>18:00-22:00:</strong> 🌅 Bright light exposure to delay clock</div>
+							<div><strong>${Math.floor(targetBedtime)}:${((targetBedtime % 1) * 60).toFixed(0).padStart(2, '0')}:</strong> 😴 GO TO BED (${(todaysShift * 60).toFixed(0)} min later)</div>
+							<div><strong>Naps:</strong> ✅ <30 min, before 3 PM, 8+ hrs before bed</div>
 						`;
 					}
 				}

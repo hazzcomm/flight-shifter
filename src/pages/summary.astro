@@ -110,34 +110,61 @@ const version = packageJson.version;
                 <div class="text-sm text-gray-600 space-y-1">
             `;
             
-            // Calculate adjusted sleep times for this day
+            // Calculate adjusted sleep times for this day - proper gradual adjustment
             const originalBedtime = plan.travelDetails?.usualBedtime || '23:00';
             const originalWakeTime = plan.travelDetails?.usualWakeTime || '07:00';
             
             const [bedHour, bedMin] = originalBedtime.split(':').map(Number);
             const [wakeHour, wakeMin] = originalWakeTime.split(':').map(Number);
             
+            // Gradual adjustment: max 1 hour per day
+            const dailyShift = Math.min(1, plan.timeZonesDifference / 3);
+            const todaysShift = dailyShift * day;
+            
             if (plan.direction === 'eastward') {
               // Advance sleep schedule gradually
-              const adjustedBedHour = Math.max(bedHour - day, 20); // Don't go earlier than 8 PM
-              const adjustedWakeHour = Math.max(wakeHour - day, 5); // Don't go earlier than 5 AM
+              const targetBedtime = Math.max(bedHour - todaysShift, 20);
+              const targetWakeTime = Math.max(wakeHour - todaysShift, 5);
+              const lightDimTime = targetBedtime - 2;
               
               scheduleHTML += `
-                <div>🌅 <strong>Morning (${adjustedWakeHour.toString().padStart(2, '0')}:${wakeMin.toString().padStart(2, '0')}):</strong> Wake up earlier, get bright light immediately</div>
-                <div>💡 <strong>10:00-12:00:</strong> Continue bright light exposure (outdoor sunlight best)</div>
-                <div>🌙 <strong>Evening (${adjustedBedHour.toString().padStart(2, '0')}:${bedMin.toString().padStart(2, '0')}):</strong> Go to bed earlier, dim lights 2 hours before</div>
-                ${day > 0 ? '<div>⚠️ <strong>Avoid long naps</strong> - stay awake to build sleep drive for nighttime</div>' : ''}
+                <div class="bg-blue-50 p-3 rounded-lg mb-3">
+                  <div class="font-bold text-blue-800 mb-2">😴 SLEEP SCHEDULE</div>
+                  <div><strong>Wake up: ${Math.floor(targetWakeTime)}:${((targetWakeTime % 1) * 60).toFixed(0).padStart(2, '0')}</strong> (${(todaysShift * 60).toFixed(0)} min earlier than usual)</div>
+                  <div><strong>Go to bed: ${Math.floor(targetBedtime)}:${((targetBedtime % 1) * 60).toFixed(0).padStart(2, '0')}</strong> (${(todaysShift * 60).toFixed(0)} min earlier than usual)</div>
+                </div>
+                
+                <div class="space-y-2 text-sm">
+                  <div><strong>${Math.floor(targetWakeTime)}:${((targetWakeTime % 1) * 60).toFixed(0).padStart(2, '0')}:</strong> 😴 WAKE UP + immediate bright light (go outside!)</div>
+                  <div><strong>06:00-10:00:</strong> 🌅 Bright light therapy (10,000+ lux outdoors preferred)</div>
+                  <div><strong>12:00-14:00:</strong> 🍽️ Lunch at normal time, avoid heavy meals</div>
+                  <div><strong>${Math.floor(lightDimTime)}:${((lightDimTime % 1) * 60).toFixed(0).padStart(2, '0')}:</strong> 🌙 Start dimming ALL lights, blue light filters ON</div>
+                  <div><strong>${Math.floor(targetBedtime)}:${((targetBedtime % 1) * 60).toFixed(0).padStart(2, '0')}:</strong> 😴 GO TO BED - no screens, complete darkness</div>
+                  <div><strong>Naps:</strong> ⚠️ AVOID or max 20 min before 2 PM only</div>
+                  <div><strong>Caffeine:</strong> ☕ Stop by 2 PM to avoid sleep interference</div>
+                </div>
               `;
             } else {
               // Delay sleep schedule gradually
-              const adjustedBedHour = Math.min(bedHour + day, 2); // Don't go later than 2 AM
-              const adjustedWakeHour = Math.min(wakeHour + day, 10); // Don't go later than 10 AM
+              const targetBedtime = Math.min(bedHour + todaysShift, 1);
+              const targetWakeTime = Math.min(wakeHour + todaysShift, 10);
               
               scheduleHTML += `
-                <div>🕶️ <strong>Morning (${adjustedWakeHour.toString().padStart(2, '0')}:${wakeMin.toString().padStart(2, '0')}):</strong> Sleep in later, keep lights dim when you wake</div>
-                <div>☀️ <strong>Afternoon:</strong> Normal light exposure, avoid too much brightness</div>
-                <div>💡 <strong>Evening (${adjustedBedHour.toString().padStart(2, '0')}:${bedMin.toString().padStart(2, '0')}):</strong> Stay up later, seek bright light until bedtime</div>
-                ${day > 0 ? '<div>⚠️ <strong>Avoid long naps</strong> - stay awake to build sleep drive for nighttime</div>' : ''}
+                <div class="bg-orange-50 p-3 rounded-lg mb-3">
+                  <div class="font-bold text-orange-800 mb-2">😴 SLEEP SCHEDULE</div>
+                  <div><strong>Wake up: ${Math.floor(targetWakeTime)}:${((targetWakeTime % 1) * 60).toFixed(0).padStart(2, '0')}</strong> (${(todaysShift * 60).toFixed(0)} min later than usual)</div>
+                  <div><strong>Go to bed: ${Math.floor(targetBedtime)}:${((targetBedtime % 1) * 60).toFixed(0).padStart(2, '0')}</strong> (${(todaysShift * 60).toFixed(0)} min later than usual)</div>
+                </div>
+                
+                <div class="space-y-2 text-sm">
+                  <div><strong>06:00-10:00:</strong> 🕶️ Keep lights DIM, wear sunglasses outside</div>
+                  <div><strong>${Math.floor(targetWakeTime)}:${((targetWakeTime % 1) * 60).toFixed(0).padStart(2, '0')}:</strong> 😴 WAKE UP (sleep in longer), minimal light</div>
+                  <div><strong>12:00-15:00:</strong> ☀️ Normal indoor lighting OK, avoid bright outdoor sun</div>
+                  <div><strong>15:00-16:00:</strong> 💤 Strategic nap OK: <30 min, must end 8+ hrs before bed</div>
+                  <div><strong>18:00-22:00:</strong> 🌅 BRIGHT light exposure (10,000+ lux) to delay clock</div>
+                  <div><strong>${Math.floor(targetBedtime)}:${((targetBedtime % 1) * 60).toFixed(0).padStart(2, '0')}:</strong> 😴 GO TO BED (stay up later), continue bright light until bed</div>
+                  <div><strong>Caffeine:</strong> ☕ OK later in day, can help stay awake</div>
+                </div>
               `;
             }
             
