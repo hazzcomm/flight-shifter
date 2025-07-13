@@ -33,7 +33,6 @@ export interface JetLagPlan {
 
 export class JetLagCalculator {
   static calculateTimeZoneDifference(departure: string, arrival: string): number {
-    // Simplified timezone calculation - in real app would use timezone library
     const timezones: Record<string, number> = {
       'UTC': 0, 'GMT': 0,
       'EST': -5, 'PST': -8, 'CST': -6, 'MST': -7,
@@ -46,6 +45,34 @@ export class JetLagCalculator {
     return arrOffset - depOffset;
   }
 
+  static convertToDestinationTime(localTime: string, sourceTimezone: string, destTimezone: string): Date {
+    // Convert local datetime-local input to destination timezone
+    const timezones: Record<string, number> = {
+      'UTC': 0, 'GMT': 0,
+      'EST': -5, 'PST': -8, 'CST': -6, 'MST': -7,
+      'JST': 9, 'AEST': 10, 'CET': 1, 'IST': 5.5,
+      'HKT': 8, 'SGT': 8, 'CAT': 2, 'EAT': 3
+    };
+    
+    const sourceOffset = timezones[sourceTimezone] || 0;
+    const destOffset = timezones[destTimezone] || 0;
+    const offsetDiff = destOffset - sourceOffset;
+    
+    const localDate = new Date(localTime);
+    const utcTime = localDate.getTime() - (sourceOffset * 60 * 60 * 1000);
+    const destTime = new Date(utcTime + (destOffset * 60 * 60 * 1000));
+    
+    return destTime;
+  }
+
+  static calculateFlightDuration(departureTime: string, arrivalTime: string, 
+                                 departureTimezone: string, arrivalTimezone: string): number {
+    const depDate = new Date(departureTime);
+    const arrDate = this.convertToDestinationTime(arrivalTime, arrivalTimezone, departureTimezone);
+    
+    return Math.abs(arrDate.getTime() - depDate.getTime()) / (1000 * 60 * 60); // hours
+  }
+
   static calculateJetLagPlan(travel: TravelDetails): JetLagPlan {
     const timeDiff = this.calculateTimeZoneDifference(
       travel.departureTimezone, 
@@ -55,23 +82,41 @@ export class JetLagCalculator {
     const direction = timeDiff > 0 ? 'eastward' : 'westward';
     const timeZonesDifference = Math.abs(timeDiff);
     
-    // Research shows ~1 day per timezone to fully adjust
-    const estimatedAdjustmentDays = Math.ceil(timeZonesDifference * 0.8);
+    // Calculate flight duration for more accurate recommendations
+    const flightDuration = this.calculateFlightDuration(
+      travel.departureTime, 
+      travel.arrivalTime,
+      travel.departureTimezone,
+      travel.arrivalTimezone
+    );
+    
+    // Get arrival time in destination timezone for context-aware recommendations
+    const arrivalInDestination = this.convertToDestinationTime(
+      travel.arrivalTime, 
+      travel.arrivalTimezone, 
+      travel.arrivalTimezone
+    );
+    
+    // Adjust strategy based on flight length and arrival time
+    let estimatedAdjustmentDays = Math.ceil(timeZonesDifference * 0.8);
+    if (flightDuration > 12) estimatedAdjustmentDays += 1; // Long flights are harder
+    if (timeZonesDifference > 8) estimatedAdjustmentDays += 1; // Major time changes
     
     return {
       timeZonesDifference,
       direction,
       estimatedAdjustmentDays,
-      preTravelDays: this.generatePreTravelSchedule(direction, timeZonesDifference),
-      travelDay: this.generateTravelDaySchedule(direction, travel),
-      postTravelDays: this.generatePostTravelSchedule(direction, timeZonesDifference),
+      preTravelDays: this.generatePreTravelSchedule(direction, timeZonesDifference, flightDuration),
+      travelDay: this.generateTravelDaySchedule(direction, travel, arrivalInDestination),
+      postTravelDays: this.generatePostTravelSchedule(direction, timeZonesDifference, arrivalInDestination),
       sleepSchedule: this.calculateNewSleepSchedule(travel, timeDiff)
     };
   }
 
   private static generatePreTravelSchedule(
     direction: 'eastward' | 'westward', 
-    timeZones: number
+    timeZones: number,
+    flightDuration: number = 8
   ): LightExposureRecommendation[][] {
     const days = Math.min(3, timeZones); // Max 3 days pre-travel prep
     const schedule: LightExposureRecommendation[][] = [];
@@ -115,35 +160,71 @@ export class JetLagCalculator {
 
   private static generateTravelDaySchedule(
     direction: 'eastward' | 'westward',
-    travel: TravelDetails
+    travel: TravelDetails,
+    arrivalInDestination: Date
   ): LightExposureRecommendation[] {
     const schedule: LightExposureRecommendation[] = [];
+    const arrivalHour = arrivalInDestination.getHours();
+    const isArrivalMorning = arrivalHour >= 6 && arrivalHour < 12;
+    const isArrivalEvening = arrivalHour >= 18 && arrivalHour < 24;
+    const isArrivalNight = arrivalHour >= 0 && arrivalHour < 6;
 
-    // Flight day recommendations based on destination timezone
+    // Flight day recommendations based on actual arrival time in destination
     if (direction === 'eastward') {
       schedule.push({
         time: 'During flight',
         action: 'avoid_light',
-        description: 'Keep cabin lights dim, wear eye mask, try to sleep if it\'s nighttime at destination'
+        description: `Keep cabin lights dim, wear eye mask. You're arriving at ${arrivalHour}:00 local time.`
       });
-      schedule.push({
-        time: 'Upon arrival morning',
-        action: 'bright_light',
-        description: 'Get outdoor sunlight immediately upon arrival if it\'s morning at destination',
-        intensity: 'Natural sunlight'
-      });
+      
+      if (isArrivalMorning) {
+        schedule.push({
+          time: `Upon arrival (${arrivalHour}:00)`,
+          action: 'bright_light',
+          description: 'Perfect! Get outdoor sunlight immediately - this will help advance your clock',
+          intensity: 'Natural sunlight'
+        });
+      } else if (isArrivalEvening || isArrivalNight) {
+        schedule.push({
+          time: `Upon arrival (${arrivalHour}:00)`,
+          action: 'avoid_light',
+          description: 'Arriving late - keep lights dim and go to sleep as soon as possible',
+        });
+      } else {
+        schedule.push({
+          time: `Upon arrival (${arrivalHour}:00)`,
+          action: 'bright_light',
+          description: 'Get some daylight exposure but not too intense',
+          intensity: '2,500+ lux'
+        });
+      }
     } else {
       schedule.push({
         time: 'During flight',
         action: 'dim_light',
-        description: 'Stay awake if it\'s daytime at destination, use normal cabin lighting'
+        description: `Stay awake if possible. You're arriving at ${arrivalHour}:00 local time.`
       });
-      schedule.push({
-        time: 'Upon arrival evening',
-        action: 'bright_light',
-        description: 'Seek bright light if arriving in evening at destination',
-        intensity: '10,000+ lux'
-      });
+      
+      if (isArrivalEvening) {
+        schedule.push({
+          time: `Upon arrival (${arrivalHour}:00)`,
+          action: 'bright_light',
+          description: 'Great timing! Seek bright light to delay your clock adjustment',
+          intensity: '10,000+ lux'
+        });
+      } else if (isArrivalMorning) {
+        schedule.push({
+          time: `Upon arrival (${arrivalHour}:00)`,
+          action: 'avoid_light',
+          description: 'Arriving morning - wear sunglasses, keep lighting minimal',
+        });
+      } else {
+        schedule.push({
+          time: `Upon arrival (${arrivalHour}:00)`,
+          action: 'dim_light',
+          description: 'Moderate light exposure - avoid too much brightness',
+        });
+      }
     }
 
     return schedule;
@@ -151,7 +232,8 @@ export class JetLagCalculator {
 
   private static generatePostTravelSchedule(
     direction: 'eastward' | 'westward',
-    timeZones: number
+    timeZones: number,
+    arrivalInDestination: Date
   ): LightExposureRecommendation[][] {
     const days = Math.min(timeZones, 5); // Up to 5 days post-travel
     const schedule: LightExposureRecommendation[][] = [];

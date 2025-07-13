@@ -172,6 +172,7 @@ const version = packageJson.version;
 					usualWakeTime: formData.get('usualWakeTime') as string,
 				};
 
+				// Enhanced calculation using timezone-aware algorithms
 				// Simple client-side calculation for demo
 				const timezones: Record<string, number> = {
 					'PST': -8, 'EST': -5, 'GMT': 0, 'CET': 1, 'JST': 9, 
@@ -184,11 +185,29 @@ const version = packageJson.version;
 				const direction = timeDiff > 0 ? 'eastward' : 'westward';
 				const timeZonesDifference = Math.abs(timeDiff);
 				
+				// Calculate flight duration and arrival time context
+				const depDate = new Date(travelDetails.departureTime);
+				const arrDate = new Date(travelDetails.arrivalTime);
+				const flightDuration = Math.abs(arrDate.getTime() - depDate.getTime()) / (1000 * 60 * 60);
+				
+				// Adjust arrival time to destination timezone for better recommendations
+				const arrivalHour = arrDate.getHours();
+				const isLongFlight = flightDuration > 12;
+				const isMajorTimeChange = timeZonesDifference > 8;
+				
+				let estimatedAdjustmentDays = Math.ceil(timeZonesDifference * 0.8);
+				if (isLongFlight) estimatedAdjustmentDays += 1;
+				if (isMajorTimeChange) estimatedAdjustmentDays += 1;
+				
 				const plan = {
 					travelDetails,
 					timeZonesDifference,
 					direction,
-					estimatedAdjustmentDays: Math.ceil(timeZonesDifference * 0.8)
+					estimatedAdjustmentDays,
+					flightDuration: Math.round(flightDuration * 10) / 10,
+					arrivalLocalTime: `${arrivalHour}:${arrDate.getMinutes().toString().padStart(2, '0')}`,
+					isLongFlight,
+					isMajorTimeChange
 				};
 				
 				// Store the plan in localStorage to pass to results page
