@@ -33,8 +33,43 @@ const version = packageJson.version;
 			</header>
 
 			<main class="max-w-4xl mx-auto">
+				<!-- Current Plan Status -->
+				<div id="current-plan-status" class="bg-gradient-to-r from-sky-50 to-blue-50 rounded-xl border border-sky-200 p-6 mb-8" style="display: none;">
+					<div class="text-center mb-4">
+						<h2 class="text-2xl font-bold text-sky-800 mb-2">Your Active Plan</h2>
+						<div id="flight-countdown" class="text-lg text-sky-600"></div>
+					</div>
+					
+					<div class="grid md:grid-cols-2 gap-6">
+						<!-- What to do NOW -->
+						<div class="bg-white rounded-lg p-4 border border-sky-100">
+							<h3 class="font-bold text-sky-800 mb-3 flex items-center gap-2">
+								<span>⏰</span> Right Now
+							</h3>
+							<div id="current-action" class="text-sm text-gray-700">
+								<!-- Populated by JavaScript -->
+							</div>
+						</div>
+						
+						<!-- Today's Plan -->
+						<div class="bg-white rounded-lg p-4 border border-sky-100">
+							<h3 class="font-bold text-sky-800 mb-3 flex items-center gap-2">
+								<span>📅</span> Today's Schedule
+							</h3>
+							<div id="today-schedule" class="text-sm text-gray-700 space-y-2">
+								<!-- Populated by JavaScript -->
+							</div>
+						</div>
+					</div>
+					
+					<div class="text-center mt-4">
+						<a href="/summary" class="bg-sky-600 text-white px-6 py-2 rounded-lg hover:bg-sky-700 mr-3">📋 Full Schedule</a>
+						<a href="/plan" class="bg-gray-100 text-gray-700 px-6 py-2 rounded-lg hover:bg-gray-200">📖 Detailed Plan</a>
+					</div>
+				</div>
+
 				<div class="bg-white rounded-xl shadow-lg p-8 mb-8">
-					<h2 class="text-2xl font-semibold mb-6 text-center">Plan Your Trip</h2>
+					<h2 class="text-2xl font-semibold mb-6 text-center" id="form-title">Plan Your Trip</h2>
 					
 					<form id="jetlag-form" class="space-y-6">
 						<div class="grid md:grid-cols-2 gap-6">
@@ -257,15 +292,162 @@ const version = packageJson.version;
 				window.location.href = '/plan';
 			});
 
-			// Show summary button if plan exists
+			// Show summary button if plan exists and populate current status
 			document.addEventListener('DOMContentLoaded', function() {
 				const existingPlan = localStorage.getItem('jetlagPlan');
 				const summaryBtn = document.getElementById('quick-summary-btn');
-				if (existingPlan && summaryBtn) {
-					summaryBtn.style.display = 'block';
-					summaryBtn.onclick = () => window.location.href = '/summary';
+				
+				if (existingPlan) {
+					// Show summary button
+					if (summaryBtn) {
+						summaryBtn.style.display = 'block';
+						summaryBtn.onclick = () => window.location.href = '/summary';
+					}
+					
+					// Show current plan status
+					showCurrentPlanStatus(JSON.parse(existingPlan));
 				}
 			});
+
+			function showCurrentPlanStatus(plan) {
+				const statusDiv = document.getElementById('current-plan-status');
+				const formTitle = document.getElementById('form-title');
+				
+				if (!statusDiv || !plan.travelDetails) return;
+				
+				// Show the status section
+				statusDiv.style.display = 'block';
+				
+				// Update form title
+				if (formTitle) {
+					formTitle.textContent = 'Update Your Trip';
+				}
+				
+				// Calculate days until flight
+				const now = new Date();
+				const departureDate = new Date(plan.travelDetails.departureTime);
+				const daysUntilFlight = Math.ceil((departureDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+				
+				// Update countdown
+				const countdownDiv = document.getElementById('flight-countdown');
+				if (countdownDiv) {
+					if (daysUntilFlight > 0) {
+						countdownDiv.innerHTML = `✈️ Flight in <strong>${daysUntilFlight} day${daysUntilFlight !== 1 ? 's' : ''}</strong> to ${plan.travelDetails.arrivalTimezone}`;
+					} else if (daysUntilFlight === 0) {
+						countdownDiv.innerHTML = `🛫 <strong>Flight Day!</strong> to ${plan.travelDetails.arrivalTimezone}`;
+					} else {
+						countdownDiv.innerHTML = `🌍 Currently in ${plan.travelDetails.arrivalTimezone} (${Math.abs(daysUntilFlight)} days since arrival)`;
+					}
+				}
+				
+				// Show current action based on time of day
+				showCurrentAction(plan, now, daysUntilFlight);
+				
+				// Show today's schedule
+				showTodaySchedule(plan, now, daysUntilFlight);
+			}
+
+			function showCurrentAction(plan, now, daysUntilFlight) {
+				const currentActionDiv = document.getElementById('current-action');
+				if (!currentActionDiv) return;
+				
+				const currentHour = now.getHours();
+				const currentMinute = now.getMinutes();
+				const currentTime = currentHour + (currentMinute / 60);
+				
+				let action = '';
+				let actionClass = '';
+				
+				if (daysUntilFlight < 0) {
+					// Already arrived
+					action = `<div class="text-green-700 font-medium">🎉 You've arrived! Focus on local schedule and get sunlight during local daytime.</div>`;
+				} else if (daysUntilFlight === 0) {
+					// Flight day
+					action = `<div class="text-blue-700 font-medium">🛫 <strong>Flight Day!</strong><br>Follow your travel day plan and stay hydrated.</div>`;
+				} else {
+					// Pre-flight preparation
+					if (plan.direction === 'eastward') {
+						if (currentTime >= 6 && currentTime < 10) {
+							action = `<div class="text-yellow-700 font-medium">🌅 <strong>GET BRIGHT LIGHT NOW!</strong><br>Go outside or use 10,000+ lux light therapy. This advances your clock.</div>`;
+							actionClass = 'bg-yellow-50 border-yellow-200';
+						} else if (currentTime >= 19 && currentTime < 23) {
+							action = `<div class="text-purple-700 font-medium">🌙 <strong>DIM THE LIGHTS</strong><br>Start winding down. Use blue light filters, dim all lights.</div>`;
+							actionClass = 'bg-purple-50 border-purple-200';
+						} else if (currentTime >= 23 || currentTime < 6) {
+							action = `<div class="text-gray-700 font-medium">😴 <strong>SLEEP TIME</strong><br>Go to bed earlier than usual. Avoid all screens and light.</div>`;
+							actionClass = 'bg-gray-50 border-gray-200';
+						} else {
+							action = `<div class="text-gray-600">☀️ Normal daytime activities. Next: Get bright light at 6-10 AM tomorrow.</div>`;
+						}
+					} else {
+						// Westward
+						if (currentTime >= 6 && currentTime < 10) {
+							action = `<div class="text-blue-700 font-medium">🕶️ <strong>AVOID BRIGHT LIGHT</strong><br>Keep lights dim, wear sunglasses outside. Sleep in if possible.</div>`;
+							actionClass = 'bg-blue-50 border-blue-200';
+						} else if (currentTime >= 18 && currentTime < 22) {
+							action = `<div class="text-yellow-700 font-medium">💡 <strong>GET BRIGHT LIGHT NOW!</strong><br>Seek bright light to delay your clock. Stay active.</div>`;
+							actionClass = 'bg-yellow-50 border-yellow-200';
+						} else if (currentTime >= 22 || currentTime < 2) {
+							action = `<div class="text-green-700 font-medium">🌙 Stay up later than usual. Continue bright light exposure until bedtime.</div>`;
+							actionClass = 'bg-green-50 border-green-200';
+						} else {
+							action = `<div class="text-gray-600">🌙 Normal late evening/night. Next: Avoid bright light 6-10 AM tomorrow.</div>`;
+						}
+					}
+				}
+				
+				currentActionDiv.innerHTML = action;
+				if (actionClass) {
+					currentActionDiv.className = `text-sm p-3 rounded-lg border ${actionClass}`;
+				}
+			}
+
+			function showTodaySchedule(plan, now, daysUntilFlight) {
+				const scheduleDiv = document.getElementById('today-schedule');
+				if (!scheduleDiv) return;
+				
+				let schedule = '';
+				
+				if (daysUntilFlight <= 0) {
+					schedule = `
+						<div class="font-medium text-green-800">✅ Focus on destination schedule</div>
+						<div>• Get sunlight during local daytime</div>
+						<div>• Eat meals at local times</div>
+						<div>• Stay hydrated and avoid alcohol</div>
+					`;
+				} else {
+					// Calculate today's specific adjustments
+					const adjustmentDay = Math.min(3, 4 - daysUntilFlight);
+					const dailyShift = Math.min(1, plan.timeZonesDifference / 3);
+					const todaysShift = dailyShift * adjustmentDay;
+					
+					if (plan.direction === 'eastward') {
+						const targetBedtime = 23 - todaysShift;
+						const targetWakeTime = 7 - todaysShift;
+						
+						schedule = `
+							<div class="font-medium text-sky-800">🌅 Advancing your schedule (Day ${adjustmentDay})</div>
+							<div><strong>06:00-10:00:</strong> Bright light (10,000+ lux)</div>
+							<div><strong>${Math.floor(targetBedtime)}:${((targetBedtime % 1) * 60).toFixed(0).padStart(2, '0')}:</strong> Start dimming lights</div>
+							<div><strong>${Math.floor(targetWakeTime)}:${((targetWakeTime % 1) * 60).toFixed(0).padStart(2, '0')}:</strong> Target wake time</div>
+							<div><strong>Naps:</strong> Avoid or <20 min before 2 PM</div>
+						`;
+					} else {
+						const targetBedtime = 23 + todaysShift;
+						const targetWakeTime = 7 + todaysShift;
+						
+						schedule = `
+							<div class="font-medium text-sky-800">🌙 Delaying your schedule (Day ${adjustmentDay})</div>
+							<div><strong>06:00-10:00:</strong> Keep lights dim</div>
+							<div><strong>18:00-22:00:</strong> Bright light exposure</div>
+							<div><strong>${Math.floor(targetWakeTime)}:${((targetWakeTime % 1) * 60).toFixed(0).padStart(2, '0')}:</strong> Target wake time</div>
+							<div><strong>Naps:</strong> <30 min, before 3 PM, 8+ hrs before bed</div>
+						`;
+					}
+				}
+				
+				scheduleDiv.innerHTML = schedule;
+			}
 
 			// Import plan functionality
 			document.getElementById('import-plan-btn')?.addEventListener('click', function() {

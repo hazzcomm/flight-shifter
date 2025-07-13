@@ -118,37 +118,56 @@ export class JetLagCalculator {
     timeZones: number,
     flightDuration: number = 8
   ): LightExposureRecommendation[][] {
-    const days = Math.min(3, timeZones); // Max 3 days pre-travel prep
+    // Gradual adjustment: max 1 hour per day, based on NASA research
+    const maxAdjustmentDays = Math.min(3, Math.ceil(timeZones / 1)); 
+    const dailyShift = Math.min(1, timeZones / maxAdjustmentDays); // Max 1 hour per day
     const schedule: LightExposureRecommendation[][] = [];
 
-    for (let day = 1; day <= days; day++) {
+    for (let day = 1; day <= maxAdjustmentDays; day++) {
       const daySchedule: LightExposureRecommendation[] = [];
+      const cumulativeShift = dailyShift * day;
       
       if (direction === 'eastward') {
-        // Eastward: advance clock by getting morning light earlier
+        // Eastward: gradually advance sleep schedule
+        const adjustedLightTime = Math.max(6, 7 - cumulativeShift);
+        const adjustedDimTime = Math.max(19, 22 - cumulativeShift);
+        
         daySchedule.push({
-          time: `${6 + day}:00`,
+          time: `${Math.floor(adjustedLightTime).toString().padStart(2, '0')}:${((adjustedLightTime % 1) * 60).toString().padStart(2, '0')}`,
           action: 'bright_light',
-          description: `Get bright light exposure (10,000+ lux) - outdoor sunlight or light therapy box`,
+          description: `Get bright morning light (10,000+ lux). Advancing by ${(cumulativeShift * 60).toFixed(0)} minutes total.`,
           intensity: '10,000+ lux'
         });
         daySchedule.push({
-          time: `${20 - day}:00`,
+          time: `${Math.floor(adjustedDimTime).toString().padStart(2, '0')}:${((adjustedDimTime % 1) * 60).toString().padStart(2, '0')}`,
           action: 'avoid_light',
-          description: 'Start dimming lights, avoid screens. Use blue light filters.'
+          description: `Start dimming lights earlier. Go to bed ~${(dailyShift * 60).toFixed(0)} minutes earlier than yesterday.`
+        });
+        daySchedule.push({
+          time: 'Napping',
+          action: 'avoid_light',
+          description: 'Avoid naps today to build sleep drive. If essential: <20 min before 2 PM only.'
         });
       } else {
-        // Westward: delay clock by avoiding morning light, getting evening light
+        // Westward: gradually delay sleep schedule
+        const adjustedDimTime = Math.min(23, 21 + cumulativeShift);
+        const adjustedLightTime = Math.min(20, 18 + cumulativeShift);
+        
         daySchedule.push({
-          time: '06:00',
-          action: 'avoid_light',
-          description: 'Keep lights dim, wear sunglasses if going outside'
+          time: '07:00',
+          action: 'dim_light',
+          description: `Keep morning light minimal. Sleep in ${(cumulativeShift * 60).toFixed(0)} minutes later than usual.`
         });
         daySchedule.push({
-          time: `${18 + day}:00`,
+          time: `${Math.floor(adjustedLightTime).toString().padStart(2, '0')}:${((adjustedLightTime % 1) * 60).toString().padStart(2, '0')}`,
           action: 'bright_light',
-          description: 'Get bright light exposure in evening',
+          description: `Get bright evening light exposure to delay your clock.`,
           intensity: '10,000+ lux'
+        });
+        daySchedule.push({
+          time: 'Napping',
+          action: 'dim_light',
+          description: 'Strategic nap OK: <30 min, ending before 3 PM, at least 8 hours before planned bedtime.'
         });
       }
       
